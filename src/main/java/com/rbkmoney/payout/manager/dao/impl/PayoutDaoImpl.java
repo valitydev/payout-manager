@@ -14,6 +14,8 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 import static com.rbkmoney.payout.manager.domain.tables.Payout.PAYOUT;
 
 @Component
@@ -52,13 +54,17 @@ public class PayoutDaoImpl extends AbstractGenericDao implements PayoutDao {
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
         executeOne(query, keyHolder);
-        return keyHolder.getKey().longValue();
+        return Optional.ofNullable(keyHolder.getKey())
+                .map(Number::longValue)
+                .orElseThrow();
     }
 
     @Override
-    public void changeStatus(String payoutId, PayoutStatus payoutStatus) throws DaoException {
+    public void changeStatus(String payoutId, PayoutStatus payoutStatus, String cancelDetails) throws DaoException {
         Query query = getDslContext().update(PAYOUT)
                 .set(PAYOUT.STATUS, payoutStatus)
+                .set(PAYOUT.SEQUENCE_ID, PAYOUT.SEQUENCE_ID.plus(1))
+                .set(PAYOUT.CANCEL_DETAILS, cancelDetails)
                 .where(PAYOUT.PAYOUT_ID.eq(payoutId));
 
         executeOne(query);

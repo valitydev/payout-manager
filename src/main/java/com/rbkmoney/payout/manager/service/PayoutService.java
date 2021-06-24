@@ -43,7 +43,7 @@ public class PayoutService {
     private final PayoutDao payoutDao;
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public Payout create(String partyId, String shopId, Cash cash) {
+    public String create(String partyId, String shopId, Cash cash) {
         log.info("Trying to create a payout, partyId='{}', shopId='{}'", partyId, shopId);
         if (cash.getAmount() <= 0) {
             throw new InsufficientFundsException("Available amount must be greater than 0");
@@ -69,46 +69,46 @@ public class PayoutService {
                     String.format("Negative amount in payout cash flow, amount='%d', fee='%d'", amount, fee));
         }
         String payoutId = UUID.randomUUID().toString();
-        List<CashFlowPosting> cashFlowPostings = toDomainCashFlows(payoutId, finalCashFlowPostings);
-        cashFlowPostingService.save(cashFlowPostings);
-        Payout payout = save(
+        save(
+                payoutId,
+                localDateTime,
                 partyId,
                 shopId,
-                cash,
                 payoutToolId,
-                localDateTime,
                 amount,
                 fee,
-                payoutId);
+                cash.getCurrency().getSymbolicCode());
+        List<CashFlowPosting> cashFlowPostings = toDomainCashFlows(payoutId, finalCashFlowPostings);
+        cashFlowPostingService.save(cashFlowPostings);
         Clock clock = shumwayService.hold(payoutId, cashFlowPostings);
         validateBalance(payoutId, clock, party, shopId);
         log.info("Payout has been created, payoutId='{}'", payoutId);
-        return payout;
+        return payoutId;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public Payout save(
+    public void save(
+            String payoutId,
+            LocalDateTime createdAt,
             String partyId,
             String shopId,
-            Cash cash,
             String payoutToolId,
-            LocalDateTime localDateTime,
             long amount,
             long fee,
-            String payoutId) {
+            String symbolicCode) {
+        log.info("Trying to save a Payout, payoutId='{}'", payoutId);
         try {
             var payout = new Payout();
             payout.setPayoutId(payoutId);
-            payout.setCreatedAt(localDateTime);
+            payout.setCreatedAt(createdAt);
             payout.setPartyId(partyId);
             payout.setShopId(shopId);
             payout.setStatus(com.rbkmoney.payout.manager.domain.enums.PayoutStatus.UNPAID);
             payout.setPayoutToolId(payoutToolId);
             payout.setAmount(amount);
             payout.setFee(fee);
-            payout.setCurrencyCode(cash.getCurrency().getSymbolicCode());
+            payout.setCurrencyCode(symbolicCode);
             payoutDao.save(payout);
-            return payout;
         } catch (DaoException ex) {
             throw new StorageException(String.format("Failed to save Payout, payoutId='%s'", payoutId), ex);
         }
@@ -132,7 +132,7 @@ public class PayoutService {
     public void confirm(String payoutId) {
         log.info("Trying to confirm a payout, payoutId='{}'", payoutId);
         try {
-            Payout payout = payoutDao.getForUpdate(payoutId);
+            Payout payout = getForUpdate(payoutId);
             if (payout.getStatus() == PayoutStatus.CONFIRMED) {
                 log.info("Payout already confirmed, payoutId='{}'", payoutId);
                 return;
@@ -151,15 +151,15 @@ public class PayoutService {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void cancel(String payoutId) {
+    public void cancel(String payoutId, String details) {
         log.info("Trying to cancel a payout, payoutId='{}'", payoutId);
         try {
-            Payout payout = payoutDao.getForUpdate(payoutId);
+            Payout payout = getForUpdate(payoutId);
             if (payout.getStatus() == PayoutStatus.CANCELLED) {
                 log.info("Payout already cancelled, payoutId='{}'", payoutId);
                 return;
             }
-            payoutDao.changeStatus(payoutId, PayoutStatus.CANCELLED);
+            payoutDao.changeStatus(payoutId, PayoutStatus.CANCELLED, details);
             switch (payout.getStatus()) {
                 case UNPAID:
                 case PAID:
@@ -185,6 +185,20 @@ public class PayoutService {
             shumwayService.rollback(payoutId);
             throw new InsufficientFundsException(
                     String.format("Invalid available amount in shop account, balance='%s'", balance));
+        }
+    }
+
+    private Payout getForUpdate(String payoutId) {
+        log.info("Trying to get a Payout, payoutId='{}'", payoutId);
+        try {
+            Payout payout = payoutDao.getForUpdate(payoutId);
+            if (payout == null) {
+                throw new NotFoundException(
+                        String.format("Payout not found, payoutId='%s'", payoutId));
+            }
+            return payout;
+        } catch (DaoException ex) {
+            throw new StorageException(String.format("Failed to get a Payout, payoutId='%s'", payoutId), ex);
         }
     }
 }
