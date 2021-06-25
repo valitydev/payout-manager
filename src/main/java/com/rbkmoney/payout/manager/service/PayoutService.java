@@ -11,10 +11,7 @@ import com.rbkmoney.payout.manager.dao.PayoutDao;
 import com.rbkmoney.payout.manager.domain.enums.PayoutStatus;
 import com.rbkmoney.payout.manager.domain.tables.pojos.CashFlowPosting;
 import com.rbkmoney.payout.manager.domain.tables.pojos.Payout;
-import com.rbkmoney.payout.manager.exception.InsufficientFundsException;
-import com.rbkmoney.payout.manager.exception.InvalidStateException;
-import com.rbkmoney.payout.manager.exception.NotFoundException;
-import com.rbkmoney.payout.manager.exception.StorageException;
+import com.rbkmoney.payout.manager.exception.*;
 import com.rbkmoney.payout.manager.util.CashFlowType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +47,10 @@ public class PayoutService {
         }
         Party party = partyManagementService.getParty(partyId);
         String payoutToolId = party.getShops().get(shopId).getPayoutToolId();
+        if (payoutToolId == null) {
+            throw new InvalidRequestException(
+                    String.format("PayoutToolId is null with partyId=%s, shopId=%s", partyId, shopId));
+        }
         LocalDateTime localDateTime = LocalDateTime.now(ZoneOffset.UTC);
         String createdAt = TypeUtil.temporalToString(localDateTime.toInstant(ZoneOffset.UTC));
         List<FinalCashFlowPosting> finalCashFlowPostings = partyManagementService.computePayoutCashFlow(
@@ -78,7 +79,7 @@ public class PayoutService {
                 amount,
                 fee,
                 cash.getCurrency().getSymbolicCode());
-        List<CashFlowPosting> cashFlowPostings = toDomainCashFlows(payoutId, finalCashFlowPostings);
+        List<CashFlowPosting> cashFlowPostings = toDomainCashFlows(payoutId, localDateTime, finalCashFlowPostings);
         cashFlowPostingService.save(cashFlowPostings);
         Clock clock = shumwayService.hold(payoutId, cashFlowPostings);
         validateBalance(payoutId, clock, party, shopId);
@@ -99,11 +100,12 @@ public class PayoutService {
         log.info("Trying to save a Payout, payoutId='{}'", payoutId);
         try {
             var payout = new Payout();
+            payout.setSequenceId(0);
             payout.setPayoutId(payoutId);
             payout.setCreatedAt(createdAt);
             payout.setPartyId(partyId);
             payout.setShopId(shopId);
-            payout.setStatus(com.rbkmoney.payout.manager.domain.enums.PayoutStatus.UNPAID);
+            payout.setStatus(PayoutStatus.UNPAID);
             payout.setPayoutToolId(payoutToolId);
             payout.setAmount(amount);
             payout.setFee(fee);

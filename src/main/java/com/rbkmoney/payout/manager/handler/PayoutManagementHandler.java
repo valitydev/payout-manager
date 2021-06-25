@@ -4,6 +4,7 @@ import com.rbkmoney.damsel.base.InvalidRequest;
 import com.rbkmoney.payout.manager.*;
 import com.rbkmoney.payout.manager.domain.tables.pojos.CashFlowPosting;
 import com.rbkmoney.payout.manager.exception.InsufficientFundsException;
+import com.rbkmoney.payout.manager.exception.InvalidRequestException;
 import com.rbkmoney.payout.manager.exception.InvalidStateException;
 import com.rbkmoney.payout.manager.exception.NotFoundException;
 import com.rbkmoney.payout.manager.service.CashFlowPostingService;
@@ -16,6 +17,7 @@ import org.apache.thrift.TException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -37,6 +39,9 @@ public class PayoutManagementHandler implements com.rbkmoney.payout.manager.Payo
             return getPayout(payoutId);
         } catch (InsufficientFundsException ex) {
             throw new InsufficientFunds();
+        } catch (InvalidRequestException ex) {
+            throw new InvalidRequest(
+                    Optional.ofNullable(ex.getMessage()).map(List::of).orElse(List.of()));
         }
     }
 
@@ -57,7 +62,8 @@ public class PayoutManagementHandler implements com.rbkmoney.payout.manager.Payo
             payoutService.confirm(payoutId);
             sendToKafka(payoutId);
         } catch (InvalidStateException ex) {
-            throw new InvalidRequest(List.of(ex.getMessage()));
+            throw new InvalidRequest(
+                    Optional.ofNullable(ex.getMessage()).map(List::of).orElse(List.of()));
         }
     }
 
@@ -67,7 +73,8 @@ public class PayoutManagementHandler implements com.rbkmoney.payout.manager.Payo
             payoutService.cancel(payoutId, details);
             sendToKafka(payoutId);
         } catch (InvalidStateException ex) {
-            throw new InvalidRequest(List.of(ex.getMessage()));
+            throw new InvalidRequest(
+                    Optional.ofNullable(ex.getMessage()).map(List::of).orElse(List.of()));
         }
     }
 
