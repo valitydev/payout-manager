@@ -8,14 +8,13 @@ import com.rbkmoney.geck.serializer.kit.mock.MockMode;
 import com.rbkmoney.geck.serializer.kit.mock.MockTBaseProcessor;
 import com.rbkmoney.geck.serializer.kit.tbase.TBaseHandler;
 import com.rbkmoney.payout.manager.config.AbstractDaoConfig;
+import com.rbkmoney.payout.manager.dao.PayoutDao;
 import com.rbkmoney.payout.manager.domain.enums.PayoutStatus;
 import com.rbkmoney.payout.manager.domain.tables.pojos.Payout;
-import com.rbkmoney.payout.manager.exception.InsufficientFundsException;
-import com.rbkmoney.payout.manager.exception.InvalidRequestException;
-import com.rbkmoney.payout.manager.exception.InvalidStateException;
-import com.rbkmoney.payout.manager.exception.NotFoundException;
+import com.rbkmoney.payout.manager.exception.*;
 import lombok.SneakyThrows;
 import org.apache.thrift.TBase;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,7 +94,7 @@ public class PayoutServiceTest extends AbstractDaoConfig {
         String payoutId = payoutService.create(
                 partyId,
                 shopId,
-                new Cash(100L, new CurrencyRef("RUB")));
+                buildCash(), null, null);
         Payout payout = payoutService.get(payoutId);
         assertEquals(4L, payout.getAmount());
         assertEquals(2L, payout.getFee());
@@ -110,7 +109,7 @@ public class PayoutServiceTest extends AbstractDaoConfig {
     }
 
     @Test
-    public void shouldThrowExceptionAtCreateWhenPartyManagementNotFound() {
+    public void shouldThrowExceptionAtCreateWhenNotFound() {
         String partyId = "partyId";
         Party party = new Party();
         Party returnedParty = fillTBaseObject(party, Party.class);
@@ -126,7 +125,7 @@ public class PayoutServiceTest extends AbstractDaoConfig {
                 () -> payoutService.create(
                         partyId,
                         shopId,
-                        new Cash(100L, new CurrencyRef("RUB"))));
+                        buildCash(), null, null));
         when(partyManagementService.getParty(eq(partyId))).thenReturn(returnedParty);
         when(partyManagementService.computePayoutCashFlow(
                 eq(partyId),
@@ -140,7 +139,63 @@ public class PayoutServiceTest extends AbstractDaoConfig {
                 () -> payoutService.create(
                         partyId,
                         shopId,
-                        new Cash(100L, new CurrencyRef("RUB"))));
+                        buildCash(), null, null));
+        when(partyManagementService.getParty(eq(partyId))).thenReturn(buildNullShopParty(partyId));
+        assertThrows(
+                NotFoundException.class,
+                () -> payoutService.create(
+                        partyId,
+                        shopId,
+                        buildCash(), null, null));
+        when(partyManagementService.getParty(eq(partyId))).thenReturn(buildNullPayoutTool(partyId));
+        assertThrows(
+                NotFoundException.class,
+                () -> payoutService.create(
+                        partyId,
+                        shopId,
+                        buildCash(), null, "payoutToolId"));
+
+        String payoutId = "payoutId";
+        Payout payout = random(Payout.class);
+        payout.setPayoutId(payoutId);
+        saveRandomPayout(payout);
+        when(partyManagementService.getParty(eq(partyId))).thenReturn(buildParty(partyId));
+        assertThrows(
+                PayoutAlreadyExistsException.class,
+                () -> payoutService.create(
+                        partyId,
+                        shopId,
+                        buildCash(),
+                        payoutId,
+                        null
+                )
+        );
+    }
+
+    private Cash buildCash() {
+        return new Cash(100L, new CurrencyRef("RUB"));
+    }
+
+    private Party buildNullShopParty(String partyId) {
+        return new Party().setId(partyId).setShops(Map.of());
+    }
+
+    private Party buildNullPayoutTool(String partyId) {
+        return new Party()
+                .setId(partyId)
+                .setShops(Map.of(
+                        "shopId",
+                        new Shop().setContractId("contractId")))
+                .setContracts(Map.of(
+                        "contractId",
+                        new Contract().setPayoutTools(List.of(new PayoutTool().setId("wrongToolId")))
+                ));
+    }
+
+    private Party buildParty(String partyId) {
+        return new Party()
+                .setId(partyId)
+                .setShops(Map.of("shopId", new Shop().setPayoutToolId("payoutToolId")));
     }
 
     @Test
@@ -161,7 +216,7 @@ public class PayoutServiceTest extends AbstractDaoConfig {
                 () -> payoutService.create(
                         partyId,
                         shopId,
-                        new Cash(100L, new CurrencyRef("RUB"))));
+                        buildCash(), null, null));
     }
 
     @Test
@@ -202,7 +257,7 @@ public class PayoutServiceTest extends AbstractDaoConfig {
                 () -> payoutService.create(
                         partyId,
                         shopId,
-                        new Cash(100L, new CurrencyRef("RUB"))));
+                        buildCash(), null, null));
     }
 
     @Test
@@ -246,21 +301,13 @@ public class PayoutServiceTest extends AbstractDaoConfig {
                 () -> payoutService.create(
                         partyId,
                         shopId,
-                        new Cash(100L, new CurrencyRef("RUB"))));
+                        buildCash(), null, null));
     }
 
     @Test
     public void shouldSaveAndGet() {
         Payout payout = random(Payout.class);
-        payoutService.save(
-                payout.getPayoutId(),
-                payout.getCreatedAt(),
-                payout.getPartyId(),
-                payout.getShopId(),
-                payout.getPayoutToolId(),
-                payout.getAmount(),
-                payout.getFee(),
-                payout.getCurrencyCode());
+        saveRandomPayout(payout);
         assertEquals(PayoutStatus.UNPAID, payoutService.get(payout.getPayoutId()).getStatus());
     }
 
@@ -274,15 +321,7 @@ public class PayoutServiceTest extends AbstractDaoConfig {
     @Test
     public void shouldConfirm() {
         Payout payout = random(Payout.class);
-        payoutService.save(
-                payout.getPayoutId(),
-                payout.getCreatedAt(),
-                payout.getPartyId(),
-                payout.getShopId(),
-                payout.getPayoutToolId(),
-                payout.getAmount(),
-                payout.getFee(),
-                payout.getCurrencyCode());
+        saveRandomPayout(payout);
         doNothing().when(shumwayService).commit(anyString());
         payoutService.confirm(payout.getPayoutId());
         assertEquals(PayoutStatus.CONFIRMED, payoutService.get(payout.getPayoutId()).getStatus());
@@ -302,15 +341,7 @@ public class PayoutServiceTest extends AbstractDaoConfig {
     @Test
     public void shouldThrowExceptionAtConfirmWhenStateIsCancelled() {
         Payout payout = random(Payout.class);
-        payoutService.save(
-                payout.getPayoutId(),
-                payout.getCreatedAt(),
-                payout.getPartyId(),
-                payout.getShopId(),
-                payout.getPayoutToolId(),
-                payout.getAmount(),
-                payout.getFee(),
-                payout.getCurrencyCode());
+        saveRandomPayout(payout);
         doNothing().when(shumwayService).commit(anyString());
         doNothing().when(shumwayService).rollback(anyString());
         payoutService.cancel(payout.getPayoutId(), DETAILS);
@@ -323,15 +354,7 @@ public class PayoutServiceTest extends AbstractDaoConfig {
     @Test
     public void shouldCancel() {
         Payout payout = random(Payout.class);
-        payoutService.save(
-                payout.getPayoutId(),
-                payout.getCreatedAt(),
-                payout.getPartyId(),
-                payout.getShopId(),
-                payout.getPayoutToolId(),
-                payout.getAmount(),
-                payout.getFee(),
-                payout.getCurrencyCode());
+        saveRandomPayout(payout);
         doNothing().when(shumwayService).rollback(anyString());
         payoutService.cancel(payout.getPayoutId(), DETAILS);
         assertEquals(PayoutStatus.CANCELLED, payoutService.get(payout.getPayoutId()).getStatus());
@@ -343,9 +366,8 @@ public class PayoutServiceTest extends AbstractDaoConfig {
         verify(shumwayService, times(0)).revert(anyString());
     }
 
-    @Test
-    public void shouldCancelAfterConfirm() {
-        Payout payout = random(Payout.class);
+    @NotNull
+    private Payout saveRandomPayout(Payout payout) {
         payoutService.save(
                 payout.getPayoutId(),
                 payout.getCreatedAt(),
@@ -355,6 +377,13 @@ public class PayoutServiceTest extends AbstractDaoConfig {
                 payout.getAmount(),
                 payout.getFee(),
                 payout.getCurrencyCode());
+        return payout;
+    }
+
+    @Test
+    public void shouldCancelAfterConfirm() {
+        Payout payout = random(Payout.class);
+        saveRandomPayout(payout);
         doNothing().when(shumwayService).commit(anyString());
         payoutService.confirm(payout.getPayoutId());
         assertEquals(PayoutStatus.CONFIRMED, payoutService.get(payout.getPayoutId()).getStatus());
