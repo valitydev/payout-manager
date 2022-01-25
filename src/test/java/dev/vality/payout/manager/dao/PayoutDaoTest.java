@@ -6,7 +6,7 @@ import dev.vality.payout.manager.domain.tables.pojos.Payout;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import static com.rbkmoney.payout.manager.util.ValuesGenerator.generatePayoutId;
+import static dev.vality.payout.manager.util.ValuesGenerator.generatePayoutId;
 import static dev.vality.testcontainers.annotations.util.RandomBeans.random;
 import static org.junit.jupiter.api.Assertions.*;
 

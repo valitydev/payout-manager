@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.rbkmoney.payout.manager.util.ValuesGenerator.generatePayoutId;
+import static dev.vality.payout.manager.util.ValuesGenerator.generatePayoutId;
 import static dev.vality.testcontainers.annotations.util.RandomBeans.randomStreamOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
