@@ -1,7 +1,7 @@
 package dev.vality.payout.manager.util;
 
 import dev.vality.damsel.domain.*;
-import com.rbkmoney.geck.common.util.TypeUtil;
+import dev.vality.geck.common.util.TypeUtil;
 import dev.vality.payout.manager.*;
 import dev.vality.payout.manager.domain.enums.AccountType;
 import dev.vality.payout.manager.domain.tables.pojos.CashFlowPosting;
