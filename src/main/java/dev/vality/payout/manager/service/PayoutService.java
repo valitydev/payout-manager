@@ -1,10 +1,10 @@
 package dev.vality.payout.manager.service;
 
 import dev.vality.damsel.domain.*;
-import dev.vality.damsel.shumpune.Balance;
-import dev.vality.damsel.shumpune.Clock;
-import dev.vality.dao.DaoException;
-import dev.vality.geck.common.util.TypeUtil;
+import dev.vality.damsel.shumaich.Balance;
+import dev.vality.damsel.shumaich.Clock;
+import com.rbkmoney.dao.DaoException;
+import com.rbkmoney.geck.common.util.TypeUtil;
 import dev.vality.payout.manager.dao.PayoutDao;
 import dev.vality.payout.manager.domain.enums.PayoutStatus;
 import dev.vality.payout.manager.domain.tables.pojos.CashFlowPosting;
@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.rbkmoney.payout.manager.util.ThriftUtil.parseCashFlow;
-import static com.rbkmoney.payout.manager.util.ThriftUtil.toDomainCashFlows;
+import static dev.vality.payout.manager.util.ThriftUtil.parseCashFlow;
+import static dev.vality.payout.manager.util.ThriftUtil.toDomainCashFlows;
 
 @Slf4j
 @Service

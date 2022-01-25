@@ -1,8 +1,8 @@
 package dev.vality.payout.manager.dao.impl;
 
-import dev.vality.dao.DaoException;
-import dev.vality.dao.impl.AbstractGenericDao;
-import dev.vality.mapper.RecordRowMapper;
+import com.rbkmoney.dao.DaoException;
+import com.rbkmoney.dao.impl.AbstractGenericDao;
+import com.rbkmoney.mapper.RecordRowMapper;
 import dev.vality.payout.manager.dao.PayoutDao;
 import dev.vality.payout.manager.domain.enums.PayoutStatus;
 import dev.vality.payout.manager.domain.tables.pojos.Payout;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-import static com.rbkmoney.payout.manager.domain.tables.Payout.PAYOUT;
+import static dev.vality.payout.manager.domain.tables.Payout.PAYOUT;
 
 @Component
 public class PayoutDaoImpl extends AbstractGenericDao implements PayoutDao {

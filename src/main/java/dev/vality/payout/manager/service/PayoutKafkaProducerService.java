@@ -1,6 +1,6 @@
 package dev.vality.payout.manager.service;
 
-import dev.vality.kafka.common.exception.KafkaProduceException;
+import com.rbkmoney.kafka.common.exception.KafkaProduceException;
 import dev.vality.payout.manager.Event;
 import dev.vality.payout.manager.Payout;
 import lombok.RequiredArgsConstructor;

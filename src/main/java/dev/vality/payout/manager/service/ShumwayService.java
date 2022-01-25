@@ -1,7 +1,7 @@
 package dev.vality.payout.manager.service;
 
 import dev.vality.damsel.base.InvalidRequest;
-import dev.vality.damsel.shumpune.*;
+import dev.vality.damsel.shumaich.*;
 import dev.vality.payout.manager.domain.tables.pojos.CashFlowPosting;
 import dev.vality.payout.manager.exception.AccounterException;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,8 @@ public class ShumwayService {
         try {
             log.debug("Start hold operation, postingPlanId='{}', postingBatch='{}'", postingPlanId, postingBatch);
             return retryTemplate.execute(
-                    context -> shumwayClient.hold(new PostingPlanChange(postingPlanId, postingBatch)));
+                    context -> shumwayClient.hold(new PostingPlanChange(postingPlanId, postingBatch),
+                            Clock.latest(new LatestClock())));
         } finally {
             log.debug("End hold operation, postingPlanId='{}', postingBatch='{}'", postingPlanId, postingBatch);
         }
@@ -67,7 +68,8 @@ public class ShumwayService {
             log.debug("Start commit operation, postingPlanId='{}', postingBatches='{}'",
                     postingPlanId, postingBatches);
             retryTemplate.execute(
-                    context -> shumwayClient.commitPlan(new PostingPlan(postingPlanId, postingBatches)));
+                    context -> shumwayClient.commitPlan(new PostingPlan(postingPlanId, postingBatches),
+                            Clock.latest(new LatestClock())));
         } finally {
             log.debug("End commit operation, postingPlanId='{}', postingBatches='{}'",
                     postingPlanId, postingBatches);
@@ -92,7 +94,8 @@ public class ShumwayService {
             log.debug("Start rollback operation, postingPlanId='{}', postingBatches='{}'",
                     postingPlanId, postingBatches);
             retryTemplate.execute(
-                    context -> shumwayClient.rollbackPlan(new PostingPlan(postingPlanId, postingBatches)));
+                    context -> shumwayClient.rollbackPlan(new PostingPlan(postingPlanId, postingBatches),
+                            Clock.latest(new LatestClock())));
         } finally {
             log.debug("End rollback operation, postingPlanId='{}', postingBatches='{}'",
                     postingPlanId, postingBatches);
@@ -108,8 +111,8 @@ public class ShumwayService {
                     toPostingBatch(cashFlowPostings),
                     posting -> {
                         Posting revertPosting = new Posting(posting);
-                        revertPosting.setFromId(posting.getToId());
-                        revertPosting.setToId(posting.getFromId());
+                        revertPosting.setFromAccount(posting.getToAccount());
+                        revertPosting.setToAccount(posting.getFromAccount());
                         revertPosting.setDescription("Revert payout: " + payoutId);
                         return revertPosting;
                     });
@@ -203,10 +206,10 @@ public class ShumwayService {
 
     private Posting toPosting(CashFlowPosting cashFlowPosting) {
         Posting posting = new Posting();
-        posting.setFromId(cashFlowPosting.getFromAccountId());
-        posting.setToId(cashFlowPosting.getToAccountId());
+        posting.setFromAccount(new Account(cashFlowPosting.getFromAccountId(), cashFlowPosting.getCurrencyCode()));
+        posting.setToAccount(new Account(cashFlowPosting.getToAccountId(), cashFlowPosting.getCurrencyCode()));
         posting.setAmount(cashFlowPosting.getAmount());
-        posting.setCurrencySymCode(cashFlowPosting.getCurrencyCode());
+        posting.setCurrencySymbolicCode(cashFlowPosting.getCurrencyCode());
         posting.setDescription(buildPostingDescription(
                 cashFlowPosting.getPayoutId(),
                 cashFlowPosting.getDescription()));

@@ -1,8 +1,8 @@
 package dev.vality.payout.manager.dao.impl;
 
-import dev.vality.dao.DaoException;
-import dev.vality.dao.impl.AbstractGenericDao;
-import dev.vality.mapper.RecordRowMapper;
+import com.rbkmoney.dao.DaoException;
+import com.rbkmoney.dao.impl.AbstractGenericDao;
+import com.rbkmoney.mapper.RecordRowMapper;
 import dev.vality.payout.manager.dao.CashFlowPostingDao;
 import dev.vality.payout.manager.domain.tables.pojos.CashFlowPosting;
 import com.zaxxer.hikari.HikariDataSource;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.rbkmoney.payout.manager.domain.tables.CashFlowPosting.CASH_FLOW_POSTING;
+import static dev.vality.payout.manager.domain.tables.CashFlowPosting.CASH_FLOW_POSTING;
 
 @Component
 public class CashFlowPostingDaoImpl extends AbstractGenericDao implements CashFlowPostingDao {

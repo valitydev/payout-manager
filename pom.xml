@@ -266,7 +266,7 @@
                             <inputSchema>${db.schema}</inputSchema>
                         </database>
                         <target>
-                            <packageName>com.rbkmoney.payout.manager.domain</packageName>
+                            <packageName>dev.vality.payout.manager.domain</packageName>
                             <directory>target/generated-sources/jooq</directory>
                         </target>
                     </generator>

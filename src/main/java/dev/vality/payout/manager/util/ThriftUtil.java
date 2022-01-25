@@ -1,7 +1,7 @@
 package dev.vality.payout.manager.util;
 
 import dev.vality.damsel.domain.*;
-import dev.vality.geck.common.util.TypeUtil;
+import com.rbkmoney.geck.common.util.TypeUtil;
 import dev.vality.payout.manager.*;
 import dev.vality.payout.manager.domain.enums.AccountType;
 import dev.vality.payout.manager.domain.tables.pojos.CashFlowPosting;
@@ -22,7 +22,7 @@ public class ThriftUtil {
     }
 
     public static Event createEvent(
-            com.rbkmoney.payout.manager.domain.tables.pojos.Payout payout,
+            dev.vality.payout.manager.domain.tables.pojos.Payout payout,
             List<CashFlowPosting> cashFlowPostings) {
         Integer sequenceId = payout.getSequenceId();
         PayoutChange payoutChange;
@@ -43,7 +43,7 @@ public class ThriftUtil {
     }
 
     public static Payout toThriftPayout(
-            com.rbkmoney.payout.manager.domain.tables.pojos.Payout payout,
+            dev.vality.payout.manager.domain.tables.pojos.Payout payout,
             List<CashFlowPosting> cashFlowPostings) {
         return new Payout()
                 .setPayoutId(payout.getPayoutId())
@@ -82,7 +82,7 @@ public class ThriftUtil {
     }
 
     private static PayoutStatus toThriftPayoutStatus(
-            com.rbkmoney.payout.manager.domain.enums.PayoutStatus payoutStatus,
+            dev.vality.payout.manager.domain.enums.PayoutStatus payoutStatus,
             String cancelDetails) {
         switch (payoutStatus) {
             case UNPAID:

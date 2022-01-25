@@ -19,7 +19,7 @@ import java.util.Optional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PayoutManagementHandler implements com.rbkmoney.payout.manager.PayoutManagementSrv.Iface {
+public class PayoutManagementHandler implements dev.vality.payout.manager.PayoutManagementSrv.Iface {
 
     private final PayoutService payoutService;
     private final CashFlowPostingService cashFlowPostingService;
