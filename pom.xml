@@ -72,7 +72,7 @@
         <dependency>
             <groupId>dev.vality</groupId>
             <artifactId>shumaich-proto</artifactId>
-            <version>1.43-0648261</version>
+            <version>1.44-6f57121</version>
         </dependency>
         <dependency>
             <groupId>com.rbkmoney</groupId>
