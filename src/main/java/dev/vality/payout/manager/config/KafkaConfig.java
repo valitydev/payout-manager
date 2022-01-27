@@ -1,6 +1,6 @@
 package dev.vality.payout.manager.config;
 
-import com.rbkmoney.kafka.common.serialization.ThriftSerializer;
+import dev.vality.kafka.common.serialization.ThriftSerializer;
 import dev.vality.payout.manager.Event;
 import dev.vality.payout.manager.config.properties.KafkaSslProperties;
 import lombok.RequiredArgsConstructor;

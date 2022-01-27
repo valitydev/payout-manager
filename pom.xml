@@ -42,12 +42,14 @@
             <version>1.25-cfe2120</version>
         </dependency>
         <dependency>
-            <groupId>com.rbkmoney</groupId>
+            <groupId>dev.vality</groupId>
             <artifactId>custom-metrics-spring-boot-starter</artifactId>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
-            <groupId>com.rbkmoney</groupId>
+            <groupId>dev.vality</groupId>
             <artifactId>custom-actuator-endpoints</artifactId>
+            <version>0.0.1</version>
         </dependency>
         <dependency>
             <groupId>dev.vality.woody</groupId>
@@ -63,8 +65,9 @@
             <version>0.0.1</version>
         </dependency>
         <dependency>
-            <groupId>com.rbkmoney</groupId>
+            <groupId>dev.vality</groupId>
             <artifactId>kafka-common-lib</artifactId>
+            <version>0.0.1</version>
         </dependency>
         <dependency>
             <groupId>dev.vality</groupId>

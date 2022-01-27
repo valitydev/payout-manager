@@ -1,8 +1,7 @@
 package dev.vality.payout.manager.service;
 
-import com.rbkmoney.kafka.common.exception.KafkaProduceException;
+import dev.vality.kafka.common.exception.KafkaProduceException;
 import dev.vality.payout.manager.Event;
-import dev.vality.payout.manager.Payout;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
