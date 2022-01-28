@@ -48,6 +48,8 @@ buildNumber.properties
 *.ipr
 *.iml
 
+.DS_Store
+
 
 # IntelliJ
 /out/
