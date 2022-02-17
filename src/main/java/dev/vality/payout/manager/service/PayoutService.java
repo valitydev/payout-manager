@@ -3,7 +3,7 @@ package dev.vality.payout.manager.service;
 import dev.vality.damsel.domain.*;
 import dev.vality.damsel.shumaich.Balance;
 import dev.vality.damsel.shumaich.Clock;
-import com.rbkmoney.dao.DaoException;
+import dev.vality.dao.DaoException;
 import dev.vality.geck.common.util.TypeUtil;
 import dev.vality.payout.manager.dao.PayoutDao;
 import dev.vality.payout.manager.domain.enums.PayoutStatus;

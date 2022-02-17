@@ -3,7 +3,7 @@ package dev.vality.payout.manager.handler;
 import dev.vality.damsel.base.InvalidRequest;
 import dev.vality.damsel.domain.Cash;
 import dev.vality.damsel.domain.CurrencyRef;
-import com.rbkmoney.kafka.common.exception.KafkaProduceException;
+import dev.vality.kafka.common.exception.KafkaProduceException;
 import dev.vality.payout.manager.InsufficientFunds;
 import dev.vality.payout.manager.PayoutParams;
 import dev.vality.payout.manager.ShopParams;

@@ -2,17 +2,14 @@ server:
   port: '@server.port@'
 
 management:
-  security:
-    flag: false
   server:
     port: '@management.port@'
   metrics:
     export:
-      statsd:
-        flavor: etsy
-        enabled: false
       prometheus:
         enabled: false
+    tags:
+      application: '@artifactId@'
   endpoint:
     health:
       show-details: always

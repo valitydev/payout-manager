@@ -1,6 +1,6 @@
 package dev.vality.payout.manager.dao;
 
-import com.rbkmoney.dao.DaoException;
+import dev.vality.dao.DaoException;
 import dev.vality.payout.manager.domain.enums.PayoutStatus;
 import dev.vality.payout.manager.domain.tables.pojos.Payout;
 

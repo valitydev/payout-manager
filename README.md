@@ -2,7 +2,7 @@
 
 Сервис для создания и управления выплатами, а также генераций событий создания и изменения выплаты.
 
-Имплементирует сервис `PayoutManagement` протокола https://github.com/rbkmoney/payout-manager-proto
+Имплементирует сервис `PayoutManagement` протокола https://github.com/valitydev/payout-manager-proto
 
 ### Описание
 
