@@ -1,13 +1,13 @@
 package dev.vality.payout.manager.service;
 
-import dev.vality.damsel.domain.*;
-import dev.vality.damsel.shumaich.Balance;
-import dev.vality.damsel.shumaich.Clock;
+import dev.vality.damsel.accounter.PostingPlanLog;
+import dev.vality.damsel.domain.Cash;
+import dev.vality.damsel.domain.Party;
+import dev.vality.damsel.domain.Shop;
 import dev.vality.dao.DaoException;
 import dev.vality.geck.common.util.TypeUtil;
 import dev.vality.payout.manager.dao.PayoutDao;
 import dev.vality.payout.manager.domain.enums.PayoutStatus;
-import dev.vality.payout.manager.domain.tables.pojos.CashFlowPosting;
 import dev.vality.payout.manager.domain.tables.pojos.Payout;
 import dev.vality.payout.manager.exception.*;
 import dev.vality.payout.manager.util.CashFlowType;
@@ -19,8 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static dev.vality.payout.manager.util.ThriftUtil.parseCashFlow;
@@ -49,8 +47,8 @@ public class PayoutService {
         } else {
             validatePayoutId(payoutId);
         }
-        Party party = partyManagementService.getParty(partyId);
-        Shop shop = party.getShops().get(shopId);
+        var party = partyManagementService.getParty(partyId);
+        var shop = party.getShops().get(shopId);
         if (shop == null) {
             throw new NotFoundException(String.format("Shop not found, shopId='%s'", shopId));
         }
@@ -64,37 +62,29 @@ public class PayoutService {
             validatePayoutToolId(payoutToolId, shop, party);
         }
 
-        LocalDateTime localDateTime = LocalDateTime.now(ZoneOffset.UTC);
-        String createdAt = TypeUtil.temporalToString(localDateTime.toInstant(ZoneOffset.UTC));
-        List<FinalCashFlowPosting> finalCashFlowPostings = partyManagementService.computePayoutCashFlow(
+        var localDateTime = LocalDateTime.now(ZoneOffset.UTC);
+        var createdAt = TypeUtil.temporalToString(localDateTime.toInstant(ZoneOffset.UTC));
+        var finalCashFlowPostings = partyManagementService.computePayoutCashFlow(
                 partyId,
                 shopId,
                 cash,
                 payoutToolId,
                 createdAt);
-        Map<CashFlowType, Long> cashFlow = parseCashFlow(finalCashFlowPostings);
-        Long cashFlowAmount = cashFlow.getOrDefault(CashFlowType.PAYOUT_AMOUNT, 0L);
-        Long cashFlowPayoutFee = cashFlow.getOrDefault(CashFlowType.PAYOUT_FIXED_FEE, 0L);
-        Long cashFlowFee = cashFlow.getOrDefault(CashFlowType.FEE, 0L);
-        long amount = cashFlowAmount - cashFlowPayoutFee;
-        long fee = cashFlowFee + cashFlowPayoutFee;
+        var cashFlow = parseCashFlow(finalCashFlowPostings);
+        var cashFlowAmount = cashFlow.getOrDefault(CashFlowType.PAYOUT_AMOUNT, 0L);
+        var cashFlowPayoutFee = cashFlow.getOrDefault(CashFlowType.PAYOUT_FIXED_FEE, 0L);
+        var cashFlowFee = cashFlow.getOrDefault(CashFlowType.FEE, 0L);
+        var amount = cashFlowAmount - cashFlowPayoutFee;
+        var fee = cashFlowFee + cashFlowPayoutFee;
         if (amount <= 0) {
             throw new InsufficientFundsException(
                     String.format("Negative amount in payout cash flow, amount='%d', fee='%d'", amount, fee));
         }
-        save(
-                payoutId,
-                localDateTime,
-                partyId,
-                shopId,
-                payoutToolId,
-                amount,
-                fee,
-                cash.getCurrency().getSymbolicCode());
-        List<CashFlowPosting> cashFlowPostings = toDomainCashFlows(payoutId, localDateTime, finalCashFlowPostings);
+        save(payoutId, localDateTime, partyId, shopId, payoutToolId, amount, fee, cash.getCurrency().getSymbolicCode());
+        var cashFlowPostings = toDomainCashFlows(payoutId, localDateTime, finalCashFlowPostings);
         cashFlowPostingService.save(cashFlowPostings);
-        Clock clock = shumwayService.hold(payoutId, cashFlowPostings);
-        validateBalance(payoutId, clock, party, shopId);
+        var postingPlanLog = shumwayService.hold(payoutId, cashFlowPostings);
+        validateAccount(shopId, payoutId, party, postingPlanLog);
         log.info("Payout has been created, payoutId='{}'", payoutId);
         return payoutId;
     }
@@ -106,12 +96,12 @@ public class PayoutService {
     }
 
     private void validatePayoutToolId(String payoutToolId, Shop shop, Party party) {
-        String contractId = shop.getContractId();
-        Contract contract = party.getContracts().get(contractId);
+        var contractId = shop.getContractId();
+        var contract = party.getContracts().get(contractId);
         if (contract == null) {
             throw new NotFoundException(String.format("Contract not found, contractId='%s'", contractId));
         }
-        PayoutTool payoutTool = contract.getPayoutTools().stream()
+        contract.getPayoutTools().stream()
                 .filter(p -> p.getId().equals(payoutToolId))
                 .findAny()
                 .orElseThrow(() ->
@@ -150,7 +140,7 @@ public class PayoutService {
     public Payout get(String payoutId) {
         log.info("Trying to get a Payout, payoutId='{}'", payoutId);
         try {
-            Payout payout = payoutDao.get(payoutId);
+            var payout = payoutDao.get(payoutId);
             if (payout == null) {
                 throw new NotFoundException(
                         String.format("Payout not found, payoutId='%s'", payoutId));
@@ -165,7 +155,7 @@ public class PayoutService {
     public void confirm(String payoutId) {
         log.info("Trying to confirm a payout, payoutId='{}'", payoutId);
         try {
-            Payout payout = getForUpdate(payoutId);
+            var payout = getForUpdate(payoutId);
             if (payout.getStatus() == PayoutStatus.CONFIRMED) {
                 log.info("Payout already confirmed, payoutId='{}'", payoutId);
                 return;
@@ -187,23 +177,17 @@ public class PayoutService {
     public void cancel(String payoutId, String details) {
         log.info("Trying to cancel a payout, payoutId='{}'", payoutId);
         try {
-            Payout payout = getForUpdate(payoutId);
+            var payout = getForUpdate(payoutId);
             if (payout.getStatus() == PayoutStatus.CANCELLED) {
                 log.info("Payout already cancelled, payoutId='{}'", payoutId);
                 return;
             }
             payoutDao.changeStatus(payoutId, PayoutStatus.CANCELLED, details);
             switch (payout.getStatus()) {
-                case UNPAID:
-                case PAID:
-                    shumwayService.rollback(payoutId);
-                    break;
-                case CONFIRMED:
-                    shumwayService.revert(payoutId);
-                    break;
-                default:
-                    throw new InvalidStateException(String.format("Invalid status for 'cancel' action, " +
-                            "payoutId='%s', currentStatus='%s'", payoutId, payout.getStatus()));
+                case UNPAID, PAID -> shumwayService.rollback(payoutId);
+                case CONFIRMED -> shumwayService.revert(payoutId);
+                default -> throw new InvalidStateException(String.format("Invalid status for 'cancel' action, " +
+                        "payoutId='%s', currentStatus='%s'", payoutId, payout.getStatus()));
             }
             log.info("Payout has been cancelled, payoutId='{}'", payoutId);
         } catch (DaoException ex) {
@@ -211,20 +195,20 @@ public class PayoutService {
         }
     }
 
-    private void validateBalance(String payoutId, Clock clock, Party party, String shopId) {
-        long accountId = party.getShops().get(shopId).getAccount().getSettlement();
-        Balance balance = shumwayService.getBalance(accountId, clock, payoutId);
-        if (balance == null || balance.getMinAvailableAmount() < 0) {
+    private void validateAccount(String shopId, String payoutId, Party party, PostingPlanLog postingPlanLog) {
+        var accountId = party.getShops().get(shopId).getAccount().getSettlement();
+        var account = postingPlanLog.getAffectedAccounts().get(accountId);
+        if (account == null || account.getMinAvailableAmount() < 0) {
             shumwayService.rollback(payoutId);
             throw new InsufficientFundsException(
-                    String.format("Invalid available amount in shop account, balance='%s'", balance));
+                    String.format("Invalid available amount in shop account, account='%s'", account));
         }
     }
 
     private Payout getForUpdate(String payoutId) {
         log.info("Trying to get a Payout, payoutId='{}'", payoutId);
         try {
-            Payout payout = payoutDao.getForUpdate(payoutId);
+            var payout = payoutDao.getForUpdate(payoutId);
             if (payout == null) {
                 throw new NotFoundException(
                         String.format("Payout not found, payoutId='%s'", payoutId));

@@ -59,11 +59,6 @@
         </dependency>
         <dependency>
             <groupId>dev.vality</groupId>
-            <artifactId>shumaich-proto</artifactId>
-            <version>1.44-6f57121</version>
-        </dependency>
-        <dependency>
-            <groupId>dev.vality</groupId>
             <artifactId>db-common-lib</artifactId>
         </dependency>
 
