@@ -48,7 +48,7 @@ buildNumber.properties
 *.ipr
 *.iml
 
-.DS_Store
+**/.DS_Store
 
 
 # IntelliJ
