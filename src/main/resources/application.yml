@@ -50,7 +50,7 @@ retry-policy:
 
 service:
   shumway:
-    url: http://localhost:8022/shumpune
+    url: http://shumway:8022/accounter
     networkTimeout: 5000
   partyManagement:
     url: http://hellgate:8022/v1/processing/partymgmt
