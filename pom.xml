@@ -59,11 +59,6 @@
         </dependency>
         <dependency>
             <groupId>dev.vality</groupId>
-            <artifactId>shumaich-proto</artifactId>
-            <version>1.44-6f57121</version>
-        </dependency>
-        <dependency>
-            <groupId>dev.vality</groupId>
             <artifactId>db-common-lib</artifactId>
         </dependency>
 
@@ -195,12 +190,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-remote-resources-plugin</artifactId>
-                <version>1.6.0</version>
+                <version>1.7.0</version>
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.maven.shared</groupId>
                         <artifactId>maven-filtering</artifactId>
-                        <version>1.3</version>
+                        <version>3.2.0</version>
                     </dependency>
                 </dependencies>
                 <configuration>

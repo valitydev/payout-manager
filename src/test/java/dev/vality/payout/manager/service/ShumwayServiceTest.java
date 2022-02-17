@@ -1,9 +1,9 @@
 package dev.vality.payout.manager.service;
 
-import dev.vality.damsel.shumaich.AccounterSrv;
-import dev.vality.damsel.shumaich.Clock;
-import dev.vality.damsel.shumaich.InvalidPostingParams;
-import dev.vality.damsel.shumaich.LatestClock;
+import dev.vality.damsel.accounter.Account;
+import dev.vality.damsel.accounter.AccounterSrv;
+import dev.vality.damsel.accounter.InvalidPostingParams;
+import dev.vality.damsel.accounter.PostingPlanLog;
 import dev.vality.payout.manager.config.PostgresqlSpringBootITest;
 import dev.vality.payout.manager.domain.tables.pojos.CashFlowPosting;
 import dev.vality.payout.manager.exception.AccounterException;
@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static dev.vality.payout.manager.util.ValuesGenerator.generatePayoutId;
@@ -40,10 +41,10 @@ public class ShumwayServiceTest {
         List<CashFlowPosting> cashFlowPostings = randomStreamOf(4, CashFlowPosting.class, "id")
                 .peek(cashFlowPosting -> cashFlowPosting.setPayoutId(payoutId))
                 .collect(Collectors.toList());
-        Clock clock = Clock.latest(new LatestClock());
-        when(shumwayClient.hold(any(), any())).thenReturn(clock);
+        var postingPlanLog = getPostingPlanLog();
+        when(shumwayClient.hold(any())).thenReturn(postingPlanLog);
         assertEquals(
-                clock,
+                postingPlanLog,
                 shumwayService.hold(payoutId, cashFlowPostings));
     }
 
@@ -53,7 +54,7 @@ public class ShumwayServiceTest {
         List<CashFlowPosting> cashFlowPostings = randomStreamOf(4, CashFlowPosting.class, "id")
                 .peek(cashFlowPosting -> cashFlowPosting.setPayoutId(payoutId))
                 .collect(Collectors.toList());
-        when(shumwayClient.hold(any(), any())).thenThrow(InvalidPostingParams.class);
+        when(shumwayClient.hold(any())).thenThrow(InvalidPostingParams.class);
         assertThrows(
                 AccounterException.class,
                 () -> shumwayService.hold(payoutId, cashFlowPostings));
@@ -66,10 +67,9 @@ public class ShumwayServiceTest {
                 .peek(cashFlowPosting -> cashFlowPosting.setPayoutId(payoutId))
                 .collect(Collectors.toList());
         cashFlowPostingService.save(cashFlowPostings);
-        Clock clock = Clock.latest(new LatestClock());
-        when(shumwayClient.commitPlan(any(), any())).thenReturn(clock);
+        when(shumwayClient.commitPlan(any())).thenReturn(getPostingPlanLog());
         shumwayService.commit(payoutId);
-        verify(shumwayClient, times(1)).commitPlan(any(), any());
+        verify(shumwayClient, times(1)).commitPlan(any());
     }
 
     @Test
@@ -87,7 +87,7 @@ public class ShumwayServiceTest {
                 .peek(cashFlowPosting -> cashFlowPosting.setPayoutId(payoutId))
                 .collect(Collectors.toList());
         cashFlowPostingService.save(cashFlowPostings);
-        when(shumwayClient.commitPlan(any(), any())).thenThrow(InvalidPostingParams.class);
+        when(shumwayClient.commitPlan(any())).thenThrow(InvalidPostingParams.class);
         assertThrows(
                 AccounterException.class,
                 () -> shumwayService.commit(payoutId));
@@ -100,10 +100,9 @@ public class ShumwayServiceTest {
                 .peek(cashFlowPosting -> cashFlowPosting.setPayoutId(payoutId))
                 .collect(Collectors.toList());
         cashFlowPostingService.save(cashFlowPostings);
-        Clock clock = Clock.latest(new LatestClock());
-        when(shumwayClient.rollbackPlan(any(), any())).thenReturn(clock);
+        when(shumwayClient.rollbackPlan(any())).thenReturn(getPostingPlanLog());
         shumwayService.rollback(payoutId);
-        verify(shumwayClient, times(1)).rollbackPlan(any(), any());
+        verify(shumwayClient, times(1)).rollbackPlan(any());
     }
 
     @Test
@@ -121,7 +120,7 @@ public class ShumwayServiceTest {
                 .peek(cashFlowPosting -> cashFlowPosting.setPayoutId(payoutId))
                 .collect(Collectors.toList());
         cashFlowPostingService.save(cashFlowPostings);
-        when(shumwayClient.rollbackPlan(any(), any())).thenThrow(InvalidPostingParams.class);
+        when(shumwayClient.rollbackPlan(any())).thenThrow(InvalidPostingParams.class);
         assertThrows(
                 AccounterException.class,
                 () -> shumwayService.rollback(payoutId));
@@ -134,13 +133,12 @@ public class ShumwayServiceTest {
                 .peek(cashFlowPosting -> cashFlowPosting.setPayoutId(payoutId))
                 .collect(Collectors.toList());
         cashFlowPostingService.save(cashFlowPostings);
-        Clock clock = Clock.latest(new LatestClock());
-        when(shumwayClient.hold(any(), any())).thenReturn(clock);
-        when(shumwayClient.commitPlan(any(), any())).thenReturn(clock);
+        when(shumwayClient.hold(any())).thenReturn(getPostingPlanLog());
+        when(shumwayClient.commitPlan(any())).thenReturn(getPostingPlanLog());
         shumwayService.revert(payoutId);
-        verify(shumwayClient, times(0)).rollbackPlan(any(), any());
-        verify(shumwayClient, times(1)).hold(any(), any());
-        verify(shumwayClient, times(1)).commitPlan(any(), any());
+        verify(shumwayClient, times(0)).rollbackPlan(any());
+        verify(shumwayClient, times(1)).hold(any());
+        verify(shumwayClient, times(1)).commitPlan(any());
     }
 
     @Test
@@ -158,9 +156,9 @@ public class ShumwayServiceTest {
                 .peek(cashFlowPosting -> cashFlowPosting.setPayoutId(payoutId))
                 .collect(Collectors.toList());
         cashFlowPostingService.save(cashFlowPostings);
-        when(shumwayClient.hold(any(), any())).thenThrow(InvalidPostingParams.class);
-        when(shumwayClient.commitPlan(any(), any())).thenThrow(InvalidPostingParams.class);
-        when(shumwayClient.rollbackPlan(any(), any())).thenThrow(InvalidPostingParams.class);
+        when(shumwayClient.hold(any())).thenThrow(InvalidPostingParams.class);
+        when(shumwayClient.commitPlan(any())).thenThrow(InvalidPostingParams.class);
+        when(shumwayClient.rollbackPlan(any())).thenThrow(InvalidPostingParams.class);
         assertThrows(
                 AccounterException.class,
                 () -> shumwayService.revert(payoutId));
@@ -173,13 +171,12 @@ public class ShumwayServiceTest {
                 .peek(cashFlowPosting -> cashFlowPosting.setPayoutId(payoutId))
                 .collect(Collectors.toList());
         cashFlowPostingService.save(cashFlowPostings);
-        when(shumwayClient.hold(any(), any())).thenThrow(InvalidPostingParams.class);
-        Clock clock = Clock.latest(new LatestClock());
-        when(shumwayClient.rollbackPlan(any(), any())).thenReturn(clock);
+        when(shumwayClient.hold(any())).thenThrow(InvalidPostingParams.class);
+        when(shumwayClient.rollbackPlan(any())).thenReturn(getPostingPlanLog());
         assertThrows(
                 AccounterException.class,
                 () -> shumwayService.revert(payoutId));
-        verify(shumwayClient, times(1)).rollbackPlan(any(), any());
+        verify(shumwayClient, times(1)).rollbackPlan(any());
     }
 
     @Test
@@ -189,13 +186,17 @@ public class ShumwayServiceTest {
                 .peek(cashFlowPosting -> cashFlowPosting.setPayoutId(payoutId))
                 .collect(Collectors.toList());
         cashFlowPostingService.save(cashFlowPostings);
-        Clock clock = Clock.latest(new LatestClock());
-        when(shumwayClient.hold(any(), any())).thenReturn(clock);
-        when(shumwayClient.commitPlan(any(), any())).thenThrow(InvalidPostingParams.class);
-        when(shumwayClient.rollbackPlan(any(), any())).thenReturn(clock);
+        when(shumwayClient.hold(any())).thenReturn(getPostingPlanLog());
+        when(shumwayClient.commitPlan(any())).thenThrow(InvalidPostingParams.class);
+        when(shumwayClient.rollbackPlan(any())).thenReturn(getPostingPlanLog());
         assertThrows(
                 AccounterException.class,
                 () -> shumwayService.revert(payoutId));
-        verify(shumwayClient, times(1)).rollbackPlan(any(), any());
+        verify(shumwayClient, times(1)).rollbackPlan(any());
+    }
+
+    private PostingPlanLog getPostingPlanLog() {
+        var account = new Account(1, 1, 1, 1, "RUB");
+        return new PostingPlanLog(Map.of(1L, account));
     }
 }

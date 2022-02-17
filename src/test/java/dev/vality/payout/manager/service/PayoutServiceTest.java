@@ -1,9 +1,8 @@
 package dev.vality.payout.manager.service;
 
+import dev.vality.damsel.accounter.Account;
+import dev.vality.damsel.accounter.PostingPlanLog;
 import dev.vality.damsel.domain.*;
-import dev.vality.damsel.shumaich.Balance;
-import dev.vality.damsel.shumaich.Clock;
-import dev.vality.damsel.shumaich.LatestClock;
 import dev.vality.geck.serializer.kit.mock.MockMode;
 import dev.vality.geck.serializer.kit.mock.MockTBaseProcessor;
 import dev.vality.geck.serializer.kit.tbase.TBaseHandler;
@@ -86,11 +85,7 @@ public class PayoutServiceTest {
                 anyString(),
                 anyString()))
                 .thenReturn(List.of(returnedPayoutAmount, returnedPayoutFixedFee, returnedFee));
-        when(shumwayService.hold(anyString(), anyList())).thenReturn(Clock.latest(new LatestClock()));
-        Balance balance = new Balance();
-        Balance returnedBalance = fillTBaseObject(balance, Balance.class);
-        returnedBalance.setMinAvailableAmount(1L);
-        when(shumwayService.getBalance(any(), any(), anyString())).thenReturn(returnedBalance);
+        when(shumwayService.hold(anyString(), anyList())).thenReturn(getPostingPlanLog(returnedShop));
         String payoutId = payoutService.create(
                 partyId,
                 shopId,
@@ -293,8 +288,9 @@ public class PayoutServiceTest {
                 anyString(),
                 anyString()))
                 .thenReturn(List.of(returnedPayoutAmount, returnedPayoutFixedFee, returnedFee));
-        when(shumwayService.hold(anyString(), anyList())).thenReturn(Clock.latest(new LatestClock()));
-        when(shumwayService.getBalance(any(), any(), anyString())).thenReturn(null);
+        var account = new Account(returnedShop.getAccount().getSettlement(), 1, 1, 1, "RUB");
+        when(shumwayService.hold(anyString(), anyList()))
+                .thenReturn(new PostingPlanLog(Map.of(returnedShop.getAccount().getSettlement() - 1L, account)));
         doNothing().when(shumwayService).rollback(anyString());
         assertThrows(
                 InsufficientFundsException.class,
@@ -403,5 +399,10 @@ public class PayoutServiceTest {
     @SneakyThrows
     public <T extends TBase> T fillTBaseObject(T value, Class<T> type) {
         return mockTBaseProcessor.process(value, new TBaseHandler<>(type));
+    }
+
+    private PostingPlanLog getPostingPlanLog(Shop returnedShop) {
+        var account = new Account(returnedShop.getAccount().getSettlement(), 1, 1, 1, "RUB");
+        return new PostingPlanLog(Map.of(returnedShop.getAccount().getSettlement(), account));
     }
 }
