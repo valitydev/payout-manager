@@ -1,11 +1,11 @@
 package dev.vality.payout.manager.dao.impl;
 
-import com.rbkmoney.dao.DaoException;
-import com.rbkmoney.dao.impl.AbstractGenericDao;
-import com.rbkmoney.mapper.RecordRowMapper;
+import com.zaxxer.hikari.HikariDataSource;
+import dev.vality.dao.DaoException;
+import dev.vality.dao.impl.AbstractGenericDao;
+import dev.vality.mapper.RecordRowMapper;
 import dev.vality.payout.manager.dao.CashFlowPostingDao;
 import dev.vality.payout.manager.domain.tables.pojos.CashFlowPosting;
-import com.zaxxer.hikari.HikariDataSource;
 import org.jooq.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;

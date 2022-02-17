@@ -1,4 +1,4 @@
-name: Build Maven Artifact
+name: Maven Build Artifact
 
 on:
   pull_request:
@@ -7,4 +7,4 @@ on:
 
 jobs:
   build:
-    uses: valitydev/base-workflow/.github/workflows/maven-service-build.yml@v1
+    uses: valitydev/java-workflow/.github/workflows/maven-service-build.yml@v1

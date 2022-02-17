@@ -1,6 +1,6 @@
 package dev.vality.payout.manager.service;
 
-import com.rbkmoney.dao.DaoException;
+import dev.vality.dao.DaoException;
 import dev.vality.payout.manager.dao.CashFlowPostingDao;
 import dev.vality.payout.manager.domain.tables.pojos.CashFlowPosting;
 import dev.vality.payout.manager.exception.NotFoundException;

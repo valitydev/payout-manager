@@ -5,7 +5,7 @@
     <root level="info">
         <appender-ref ref="CONSOLE"/>
     </root>
-    <logger name="com.rbkmoney.payout.manager">
+    <logger name="dev.vality.payout.manager">
         <level value="info"/>
     </logger>
     <logger name="org.apache.kafka">
