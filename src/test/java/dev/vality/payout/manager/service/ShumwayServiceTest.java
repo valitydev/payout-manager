@@ -42,7 +42,7 @@ public class ShumwayServiceTest {
                 .peek(cashFlowPosting -> cashFlowPosting.setPayoutId(payoutId))
                 .collect(Collectors.toList());
         var postingPlanLog = getPostingPlanLog();
-        when(shumwayService.hold(anyString(), anyList())).thenReturn(postingPlanLog);
+        when(shumwayClient.hold(any())).thenReturn(postingPlanLog);
         assertEquals(
                 postingPlanLog,
                 shumwayService.hold(payoutId, cashFlowPostings));
@@ -54,7 +54,7 @@ public class ShumwayServiceTest {
         List<CashFlowPosting> cashFlowPostings = randomStreamOf(4, CashFlowPosting.class, "id")
                 .peek(cashFlowPosting -> cashFlowPosting.setPayoutId(payoutId))
                 .collect(Collectors.toList());
-        when(shumwayService.hold(anyString(), anyList())).thenThrow(InvalidPostingParams.class);
+        when(shumwayClient.hold(any())).thenThrow(InvalidPostingParams.class);
         assertThrows(
                 AccounterException.class,
                 () -> shumwayService.hold(payoutId, cashFlowPostings));

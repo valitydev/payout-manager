@@ -288,7 +288,9 @@ public class PayoutServiceTest {
                 anyString(),
                 anyString()))
                 .thenReturn(List.of(returnedPayoutAmount, returnedPayoutFixedFee, returnedFee));
-        when(shumwayService.hold(anyString(), anyList())).thenReturn(getPostingPlanLog(returnedShop));
+        var account = new Account(returnedShop.getAccount().getSettlement(), 1, 1, 1, "RUB");
+        when(shumwayService.hold(anyString(), anyList()))
+                .thenReturn(new PostingPlanLog(Map.of(returnedShop.getAccount().getSettlement() - 1L, account)));
         doNothing().when(shumwayService).rollback(anyString());
         assertThrows(
                 InsufficientFundsException.class,
