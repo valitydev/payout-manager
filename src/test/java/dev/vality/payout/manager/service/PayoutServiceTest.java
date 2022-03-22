@@ -36,6 +36,8 @@ public class PayoutServiceTest {
     private ShumwayService shumwayService;
     @MockBean
     private PartyManagementService partyManagementService;
+    @MockBean
+    private FistfulService fistfulService;
 
     @Autowired
     private CashFlowPostingService cashFlowPostingService;
