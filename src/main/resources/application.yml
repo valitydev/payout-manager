@@ -55,6 +55,10 @@ service:
   partyManagement:
     url: http://hellgate:8022/v1/processing/partymgmt
     networkTimeout: 5000
+  fistful:
+    url: http://fistful:8022/fustful
+    networkTimeout: 5000
+    sourceId: source
 
 kafka:
   bootstrap-servers: "localhost:29092"
