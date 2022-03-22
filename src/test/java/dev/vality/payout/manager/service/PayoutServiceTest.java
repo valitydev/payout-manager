@@ -162,8 +162,7 @@ public class PayoutServiceTest {
                         buildCash(), null, "payoutToolId"));
 
         String payoutId = "payoutId";
-        Payout payout = random(Payout.class);
-        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.INTERNATIONAL_BANK_ACCOUNT);
+        Payout payout = random(Payout.class, "payoutToolInfo");
         payout.setPayoutId(payoutId);
         saveRandomPayout(payout);
         when(partyManagementService.getParty(eq(partyId))).thenReturn(buildParty(partyId));
@@ -323,8 +322,7 @@ public class PayoutServiceTest {
 
     @Test
     public void shouldSaveAndGet() {
-        Payout payout = random(Payout.class);
-        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.INTERNATIONAL_BANK_ACCOUNT);
+        Payout payout = random(Payout.class, "payoutToolInfo");
         saveRandomPayout(payout);
         assertEquals(PayoutStatus.UNPAID, payoutService.get(payout.getPayoutId()).getStatus());
     }
@@ -338,8 +336,7 @@ public class PayoutServiceTest {
 
     @Test
     public void shouldConfirm() {
-        Payout payout = random(Payout.class);
-        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.INTERNATIONAL_BANK_ACCOUNT);
+        Payout payout = random(Payout.class, "payoutToolInfo");
         saveRandomPayout(payout);
         doNothing().when(shumwayService).commit(anyString());
         payoutService.confirm(payout.getPayoutId());
@@ -359,8 +356,7 @@ public class PayoutServiceTest {
 
     @Test
     public void shouldThrowExceptionAtConfirmWhenStateIsCancelled() {
-        Payout payout = random(Payout.class);
-        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.INTERNATIONAL_BANK_ACCOUNT);
+        Payout payout = random(Payout.class, "payoutToolInfo");
         saveRandomPayout(payout);
         doNothing().when(shumwayService).commit(anyString());
         doNothing().when(shumwayService).rollback(anyString());
@@ -373,8 +369,7 @@ public class PayoutServiceTest {
 
     @Test
     public void shouldCancel() {
-        Payout payout = random(Payout.class);
-        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.INTERNATIONAL_BANK_ACCOUNT);
+        Payout payout = random(Payout.class, "payoutToolInfo");
         saveRandomPayout(payout);
         doNothing().when(shumwayService).rollback(anyString());
         payoutService.cancel(payout.getPayoutId(), DETAILS);
@@ -404,8 +399,7 @@ public class PayoutServiceTest {
 
     @Test
     public void shouldCancelAfterConfirm() {
-        Payout payout = random(Payout.class);
-        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.INTERNATIONAL_BANK_ACCOUNT);
+        Payout payout = random(Payout.class, "payoutToolInfo");
         saveRandomPayout(payout);
         doNothing().when(shumwayService).commit(anyString());
         payoutService.confirm(payout.getPayoutId());
