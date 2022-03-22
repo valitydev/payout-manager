@@ -399,6 +399,18 @@ public class PayoutServiceTest {
     }
 
     @Test
+    public void shouldCancelAfterConfirmWalletPayout() {
+        Payout payout = random(Payout.class, "payoutToolInfo");
+        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.WALLET_INFO);
+        saveRandomPayout(payout);
+        doNothing().when(shumwayService).commit(anyString());
+        payoutService.confirm(payout.getPayoutId());
+        assertEquals(PayoutStatus.CONFIRMED, payoutService.get(payout.getPayoutId()).getStatus());
+        assertThrows(InvalidStateException.class, () -> payoutService.cancel(payout.getPayoutId(), DETAILS));
+        verify(shumwayService, times(0)).revert(anyString());
+    }
+
+    @Test
     public void shouldThrowExceptionAtCancelWhenPayoutNotFound() {
         assertThrows(
                 NotFoundException.class,
