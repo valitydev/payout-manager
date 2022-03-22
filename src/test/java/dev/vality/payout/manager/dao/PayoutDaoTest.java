@@ -53,7 +53,7 @@ public class PayoutDaoTest {
                 PayoutStatus.CONFIRMED,
                 payoutDao.get(payout.getPayoutId()).getStatus());
         assertEquals(
-                4,
+                3,
                 payoutDao.get(payout.getPayoutId()).getSequenceId());
 
     }

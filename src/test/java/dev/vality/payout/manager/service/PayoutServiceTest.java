@@ -56,14 +56,23 @@ public class PayoutServiceTest {
 
     @Test
     public void shouldCreateAndSave() {
+        PayoutTool payoutTool = new PayoutTool();
+        PayoutTool returnedPayoutTool = fillTBaseObject(payoutTool, PayoutTool.class);
+        returnedPayoutTool.setPayoutToolInfo(PayoutToolInfo.wallet_info(new WalletInfo("id12s")));
+        Contract contract = new Contract();
+        Contract returnedContract = fillTBaseObject(contract, Contract.class);
+        returnedContract.getPayoutTools().add(returnedPayoutTool);
         String partyId = "partyId";
         Party party = new Party();
         Party returnedParty = fillTBaseObject(party, Party.class);
         returnedParty.setId(partyId);
+        returnedParty.getContracts().put(returnedContract.getId(), returnedContract);
         String shopId = "shopId";
         Shop shop = new Shop();
         Shop returnedShop = fillTBaseObject(shop, Shop.class);
         returnedShop.setId(shopId);
+        returnedShop.setContractId(returnedContract.getId());
+        returnedShop.setPayoutToolId(returnedPayoutTool.getId());
         returnedParty.setShops(Map.of(shopId, returnedShop));
         when(partyManagementService.getParty(eq(partyId))).thenReturn(returnedParty);
         FinalCashFlowPosting finalCashFlowPosting = new FinalCashFlowPosting();
@@ -154,6 +163,7 @@ public class PayoutServiceTest {
 
         String payoutId = "payoutId";
         Payout payout = random(Payout.class);
+        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.INTERNATIONAL_BANK_ACCOUNT);
         payout.setPayoutId(payoutId);
         saveRandomPayout(payout);
         when(partyManagementService.getParty(eq(partyId))).thenReturn(buildParty(partyId));
@@ -259,14 +269,23 @@ public class PayoutServiceTest {
 
     @Test
     public void shouldThrowExceptionAtCreateWhenBalanceAmountIsNegative() {
+        PayoutTool payoutTool = new PayoutTool();
+        PayoutTool returnedPayoutTool = fillTBaseObject(payoutTool, PayoutTool.class);
+        returnedPayoutTool.setPayoutToolInfo(PayoutToolInfo.wallet_info(new WalletInfo("id12s")));
+        Contract contract = new Contract();
+        Contract returnedContract = fillTBaseObject(contract, Contract.class);
+        returnedContract.getPayoutTools().add(returnedPayoutTool);
         String partyId = "partyId";
         Party party = new Party();
         Party returnedParty = fillTBaseObject(party, Party.class);
         returnedParty.setId(partyId);
+        returnedParty.getContracts().put(returnedContract.getId(), returnedContract);
         String shopId = "shopId";
         Shop shop = new Shop();
         Shop returnedShop = fillTBaseObject(shop, Shop.class);
         returnedShop.setId(shopId);
+        returnedShop.setContractId(returnedContract.getId());
+        returnedShop.setPayoutToolId(returnedPayoutTool.getId());
         returnedParty.setShops(Map.of(shopId, returnedShop));
         when(partyManagementService.getParty(eq(partyId))).thenReturn(returnedParty);
         FinalCashFlowPosting finalCashFlowPosting = new FinalCashFlowPosting();
@@ -305,6 +324,7 @@ public class PayoutServiceTest {
     @Test
     public void shouldSaveAndGet() {
         Payout payout = random(Payout.class);
+        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.INTERNATIONAL_BANK_ACCOUNT);
         saveRandomPayout(payout);
         assertEquals(PayoutStatus.UNPAID, payoutService.get(payout.getPayoutId()).getStatus());
     }
@@ -319,6 +339,7 @@ public class PayoutServiceTest {
     @Test
     public void shouldConfirm() {
         Payout payout = random(Payout.class);
+        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.INTERNATIONAL_BANK_ACCOUNT);
         saveRandomPayout(payout);
         doNothing().when(shumwayService).commit(anyString());
         payoutService.confirm(payout.getPayoutId());
@@ -339,6 +360,7 @@ public class PayoutServiceTest {
     @Test
     public void shouldThrowExceptionAtConfirmWhenStateIsCancelled() {
         Payout payout = random(Payout.class);
+        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.INTERNATIONAL_BANK_ACCOUNT);
         saveRandomPayout(payout);
         doNothing().when(shumwayService).commit(anyString());
         doNothing().when(shumwayService).rollback(anyString());
@@ -352,6 +374,7 @@ public class PayoutServiceTest {
     @Test
     public void shouldCancel() {
         Payout payout = random(Payout.class);
+        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.INTERNATIONAL_BANK_ACCOUNT);
         saveRandomPayout(payout);
         doNothing().when(shumwayService).rollback(anyString());
         payoutService.cancel(payout.getPayoutId(), DETAILS);
@@ -382,6 +405,7 @@ public class PayoutServiceTest {
     @Test
     public void shouldCancelAfterConfirm() {
         Payout payout = random(Payout.class);
+        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.INTERNATIONAL_BANK_ACCOUNT);
         saveRandomPayout(payout);
         doNothing().when(shumwayService).commit(anyString());
         payoutService.confirm(payout.getPayoutId());

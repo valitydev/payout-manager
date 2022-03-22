@@ -2,7 +2,6 @@ package dev.vality.payout.manager.util;
 
 import dev.vality.damsel.domain.*;
 import dev.vality.geck.common.util.TypeUtil;
-import dev.vality.payout.manager.PayoutToolInfo;
 import dev.vality.payout.manager.*;
 import dev.vality.payout.manager.domain.enums.AccountType;
 import dev.vality.payout.manager.domain.tables.pojos.CashFlowPosting;
@@ -56,9 +55,7 @@ public class ThriftUtil {
                 .setPayoutToolId(payout.getPayoutToolId())
                 .setAmount(payout.getAmount())
                 .setFee(payout.getFee())
-                .setCurrency(new CurrencyRef(payout.getCurrencyCode()))
-                .setPayoutToolInfo(toThriftPayoutToolInfo(payout.getPayoutToolInfo()))
-                .setWalletId(payout.getWalletId());
+                .setCurrency(new CurrencyRef(payout.getCurrencyCode()));
     }
 
     public static List<CashFlowPosting> toDomainCashFlows(
@@ -154,17 +151,6 @@ public class ThriftUtil {
                     SystemCashFlowAccount.settlement);
             case PROVIDER_SETTLEMENT -> CashFlowAccount.provider(
                     ProviderCashFlowAccount.settlement);
-            default -> throw new IllegalArgumentException();
-        };
-    }
-
-    private static PayoutToolInfo toThriftPayoutToolInfo(
-            dev.vality.payout.manager.domain.enums.PayoutToolInfo payoutToolInfo) {
-        return switch (payoutToolInfo) {
-            case russian_bank_account -> PayoutToolInfo.russian_bank_account;
-            case international_bank_account -> PayoutToolInfo.international_bank_account;
-            case wallet_info -> PayoutToolInfo.wallet_info;
-            case payment_institution_account -> PayoutToolInfo.payment_institution_account;
         };
     }
 }

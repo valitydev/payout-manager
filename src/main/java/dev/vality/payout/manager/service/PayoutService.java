@@ -155,7 +155,7 @@ public class PayoutService {
             }
             payoutDao.changeStatus(payoutId, PayoutStatus.CONFIRMED);
             shumwayService.commit(payoutId);
-            if (payout.getPayoutToolInfo() == dev.vality.payout.manager.domain.enums.PayoutToolInfo.wallet_info) {
+            if (payout.getPayoutToolInfo() == dev.vality.payout.manager.domain.enums.PayoutToolInfo.WALLET_INFO) {
                 try {
                     fistfulService.createDeposit(payoutId, payout.getWalletId(),
                             payout.getAmount(), payout.getCurrencyCode());
@@ -184,7 +184,7 @@ public class PayoutService {
                 case UNPAID -> shumwayService.rollback(payoutId);
                 case CONFIRMED -> {
                     if (payout.getPayoutToolInfo() ==
-                            dev.vality.payout.manager.domain.enums.PayoutToolInfo.wallet_info) {
+                            dev.vality.payout.manager.domain.enums.PayoutToolInfo.WALLET_INFO) {
                         throw new InvalidStateException(String.format("Unable to cancel confirmed payout to wallet, " +
                                 "payoutId='%s'", payoutId));
                     }
@@ -224,13 +224,13 @@ public class PayoutService {
 
     private dev.vality.payout.manager.domain.enums.PayoutToolInfo getPayoutToolInfo(PayoutToolInfo payoutToolInfo) {
         return switch (payoutToolInfo.getSetField()) {
-            case WALLET_INFO -> dev.vality.payout.manager.domain.enums.PayoutToolInfo.wallet_info;
-            case RUSSIAN_BANK_ACCOUNT -> dev.vality.payout.manager.domain.enums.PayoutToolInfo.russian_bank_account;
+            case WALLET_INFO -> dev.vality.payout.manager.domain.enums.PayoutToolInfo.WALLET_INFO;
+            case RUSSIAN_BANK_ACCOUNT -> dev.vality.payout.manager.domain.enums.PayoutToolInfo.RUSSIAN_BANK_ACCOUNT;
             case INTERNATIONAL_BANK_ACCOUNT -> {
-                yield dev.vality.payout.manager.domain.enums.PayoutToolInfo.international_bank_account;
+                yield dev.vality.payout.manager.domain.enums.PayoutToolInfo.INTERNATIONAL_BANK_ACCOUNT;
             }
             case PAYMENT_INSTITUTION_ACCOUNT -> {
-                yield dev.vality.payout.manager.domain.enums.PayoutToolInfo.payment_institution_account;
+                yield dev.vality.payout.manager.domain.enums.PayoutToolInfo.PAYMENT_INSTITUTION_ACCOUNT;
             }
         };
     }
