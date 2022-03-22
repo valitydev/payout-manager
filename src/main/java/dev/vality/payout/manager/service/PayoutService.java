@@ -78,8 +78,12 @@ public class PayoutService {
                     String.format("Negative amount in payout cash flow, amount='%d', fee='%d'", amount, fee));
         }
         var payoutToolInfo = getPayoutToolInfo(payoutToolId, shop, party);
+        String walletId = null;
+        if (payoutToolInfo.isSetWalletInfo()) {
+            walletId = payoutToolInfo.getWalletInfo().getWalletId();
+        }
         save(payoutId, localDateTime, partyId, shopId, payoutToolId,
-                amount, fee, cash.getCurrency().getSymbolicCode(), payoutToolInfo);
+                amount, fee, cash.getCurrency().getSymbolicCode(), getPayoutToolInfo(payoutToolInfo), walletId);
         var cashFlowPostings = toDomainCashFlows(payoutId, localDateTime, finalCashFlowPostings);
         cashFlowPostingService.save(cashFlowPostings);
         var postingPlanLog = shumwayService.hold(payoutId, cashFlowPostings);
@@ -98,7 +102,8 @@ public class PayoutService {
             long amount,
             long fee,
             String symbolicCode,
-            PayoutToolInfo payoutToolInfo) {
+            dev.vality.payout.manager.domain.enums.PayoutToolInfo payoutToolInfo,
+            String walletId) {
         log.info("Trying to save a Payout, payoutId='{}'", payoutId);
         try {
             var payout = new Payout();
@@ -112,10 +117,8 @@ public class PayoutService {
             payout.setAmount(amount);
             payout.setFee(fee);
             payout.setCurrencyCode(symbolicCode);
-            payout.setPayoutToolInfo(getPayoutToolInfo(payoutToolInfo));
-            if (payoutToolInfo.isSetWalletInfo()) {
-                payout.setWalletId(payoutToolInfo.getWalletInfo().getWalletId());
-            }
+            payout.setPayoutToolInfo(payoutToolInfo);
+            payout.setWalletId(walletId);
             payoutDao.save(payout);
         } catch (DaoException ex) {
             throw new StorageException(String.format("Failed to save Payout, payoutId='%s'", payoutId), ex);

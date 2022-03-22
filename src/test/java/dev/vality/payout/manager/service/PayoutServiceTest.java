@@ -372,7 +372,8 @@ public class PayoutServiceTest {
                 payout.getAmount(),
                 payout.getFee(),
                 payout.getCurrencyCode(),
-                payout.getPayoutToolInfo());
+                payout.getPayoutToolInfo(),
+                payout.getWalletId());
         return payout;
     }
 
