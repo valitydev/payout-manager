@@ -190,6 +190,8 @@ public class PayoutService {
                     }
                     shumwayService.revert(payoutId);
                 }
+                default -> throw new InvalidStateException(String.format("Invalid status for 'cancel' action, " +
+                        "payoutId='%s', currentStatus='%s'", payoutId, payout.getStatus()));
             }
             log.info("Payout has been cancelled, payoutId='{}'", payoutId);
         } catch (DaoException ex) {

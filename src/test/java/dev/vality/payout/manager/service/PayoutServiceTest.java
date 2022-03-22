@@ -179,6 +179,49 @@ public class PayoutServiceTest {
     }
 
     @Test
+    public void shouldThrowExceptionAtCreateWhenContractNotFound() {
+        PayoutTool payoutTool = getPayoutTool();
+        payoutTool.setPayoutToolInfo(PayoutToolInfo.wallet_info(new WalletInfo("id12s")));
+        String partyId = "partyId";
+        Party party = getParty();
+        party.setId(partyId);
+        String shopId = "shopId";
+        Shop shop = getShop();
+        shop.setId(shopId);
+        shop.setPayoutToolId(payoutTool.getId());
+        shop.setAccount(RandomBeans.randomThriftOnlyRequiredFields(ShopAccount.class));
+        party.setShops(Map.of(shopId, shop));
+        when(partyManagementService.getParty(eq(partyId))).thenReturn(party);
+        FinalCashFlowPosting finalCashFlowPosting = getFinalCashFlowPosting();
+        finalCashFlowPosting.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
+        finalCashFlowPosting.getDestination().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.payout));
+        finalCashFlowPosting.getVolume().setAmount(5L);
+        FinalCashFlowPosting returnedPayoutFixedFee = new FinalCashFlowPosting(finalCashFlowPosting);
+        returnedPayoutFixedFee.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.payout));
+        returnedPayoutFixedFee.getDestination().setAccountType(
+                CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
+        returnedPayoutFixedFee.getVolume().setAmount(1L);
+        FinalCashFlowPosting returnedFee = new FinalCashFlowPosting(finalCashFlowPosting);
+        returnedFee.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
+        returnedFee.getDestination().setAccountType(CashFlowAccount.system(SystemCashFlowAccount.settlement));
+        returnedFee.getVolume().setAmount(1L);
+        when(partyManagementService.computePayoutCashFlow(
+                eq(partyId),
+                eq(shopId),
+                any(),
+                anyString(),
+                anyString()))
+                .thenReturn(List.of(finalCashFlowPosting, returnedPayoutFixedFee, returnedFee));
+        when(shumwayService.hold(anyString(), anyList())).thenReturn(getPostingPlanLog(shop));
+        assertThrows(
+                NotFoundException.class,
+                () -> payoutService.create(
+                        partyId,
+                        shopId,
+                        buildCash(), null, null));
+    }
+
+    @Test
     public void shouldThrowExceptionAtCreateWhenPayoutToolIdIsNull() {
         String partyId = "partyId";
         Party party = getParty();
