@@ -61,6 +61,11 @@
             <groupId>dev.vality</groupId>
             <artifactId>db-common-lib</artifactId>
         </dependency>
+        <dependency>
+            <groupId>dev.vality</groupId>
+            <artifactId>fistful-proto</artifactId>
+            <version>1.141-fd4117f</version>
+        </dependency>
 
         <!--spring-->
         <dependency>
