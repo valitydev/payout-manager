@@ -47,7 +47,6 @@ public class PayoutDaoTest {
         payoutDao.save(payout);
         assertEquals(0, payoutDao.get(payout.getPayoutId()).getSequenceId());
         payoutDao.changeStatus(payout.getPayoutId(), PayoutStatus.UNPAID);
-        payoutDao.changeStatus(payout.getPayoutId(), PayoutStatus.PAID);
         payoutDao.changeStatus(payout.getPayoutId(), PayoutStatus.CANCELLED);
         payoutDao.changeStatus(payout.getPayoutId(), PayoutStatus.CONFIRMED);
         assertEquals(

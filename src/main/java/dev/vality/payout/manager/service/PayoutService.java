@@ -156,8 +156,13 @@ public class PayoutService {
             payoutDao.changeStatus(payoutId, PayoutStatus.CONFIRMED);
             shumwayService.commit(payoutId);
             if (payout.getPayoutToolInfo() == dev.vality.payout.manager.domain.enums.PayoutToolInfo.wallet_info) {
-                fistfulService.createDeposit(payoutId, payout.getWalletId(),
-                        payout.getAmount(), payout.getCurrencyCode());
+                try {
+                    fistfulService.createDeposit(payoutId, payout.getWalletId(),
+                            payout.getAmount(), payout.getCurrencyCode());
+                } catch (Exception ex) {
+                    shumwayService.revert(payoutId);
+                    throw ex;
+                }
             }
             log.info("Payout has been confirmed, payoutId='{}'", payoutId);
         } catch (DaoException ex) {
@@ -176,7 +181,7 @@ public class PayoutService {
             }
             payoutDao.changeStatus(payoutId, PayoutStatus.CANCELLED, details);
             switch (payout.getStatus()) {
-                case UNPAID, PAID -> shumwayService.rollback(payoutId);
+                case UNPAID -> shumwayService.rollback(payoutId);
                 case CONFIRMED -> {
                     if (payout.getPayoutToolInfo() ==
                             dev.vality.payout.manager.domain.enums.PayoutToolInfo.wallet_info) {
