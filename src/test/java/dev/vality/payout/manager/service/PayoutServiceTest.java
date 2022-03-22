@@ -5,13 +5,11 @@ import dev.vality.damsel.accounter.PostingPlanLog;
 import dev.vality.damsel.domain.*;
 import dev.vality.geck.serializer.kit.mock.MockMode;
 import dev.vality.geck.serializer.kit.mock.MockTBaseProcessor;
-import dev.vality.geck.serializer.kit.tbase.TBaseHandler;
 import dev.vality.payout.manager.config.PostgresqlSpringBootITest;
 import dev.vality.payout.manager.domain.enums.PayoutStatus;
 import dev.vality.payout.manager.domain.tables.pojos.Payout;
 import dev.vality.payout.manager.exception.*;
-import lombok.SneakyThrows;
-import org.apache.thrift.TBase;
+import dev.vality.testcontainers.annotations.util.RandomBeans;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,36 +54,32 @@ public class PayoutServiceTest {
 
     @Test
     public void shouldCreateAndSave() {
-        PayoutTool payoutTool = new PayoutTool();
-        PayoutTool returnedPayoutTool = fillTBaseObject(payoutTool, PayoutTool.class);
-        returnedPayoutTool.setPayoutToolInfo(PayoutToolInfo.wallet_info(new WalletInfo("id12s")));
-        Contract contract = new Contract();
-        Contract returnedContract = fillTBaseObject(contract, Contract.class);
-        returnedContract.getPayoutTools().add(returnedPayoutTool);
+        PayoutTool payoutTool = getPayoutTool();
+        payoutTool.setPayoutToolInfo(PayoutToolInfo.wallet_info(new WalletInfo("id12s")));
+        Contract contract = getContract();
+        contract.getPayoutTools().add(payoutTool);
         String partyId = "partyId";
-        Party party = new Party();
-        Party returnedParty = fillTBaseObject(party, Party.class);
-        returnedParty.setId(partyId);
-        returnedParty.getContracts().put(returnedContract.getId(), returnedContract);
+        Party party = getParty();
+        party.setId(partyId);
+        party.getContracts().put(contract.getId(), contract);
         String shopId = "shopId";
-        Shop shop = new Shop();
-        Shop returnedShop = fillTBaseObject(shop, Shop.class);
-        returnedShop.setId(shopId);
-        returnedShop.setContractId(returnedContract.getId());
-        returnedShop.setPayoutToolId(returnedPayoutTool.getId());
-        returnedParty.setShops(Map.of(shopId, returnedShop));
-        when(partyManagementService.getParty(eq(partyId))).thenReturn(returnedParty);
-        FinalCashFlowPosting finalCashFlowPosting = new FinalCashFlowPosting();
-        FinalCashFlowPosting returnedPayoutAmount = fillTBaseObject(finalCashFlowPosting, FinalCashFlowPosting.class);
-        returnedPayoutAmount.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
-        returnedPayoutAmount.getDestination().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.payout));
-        returnedPayoutAmount.getVolume().setAmount(5L);
-        FinalCashFlowPosting returnedPayoutFixedFee = new FinalCashFlowPosting(returnedPayoutAmount);
+        Shop shop = getShop();
+        shop.setId(shopId);
+        shop.setContractId(contract.getId());
+        shop.setPayoutToolId(payoutTool.getId());
+        shop.setAccount(RandomBeans.randomThriftOnlyRequiredFields(ShopAccount.class));
+        party.setShops(Map.of(shopId, shop));
+        when(partyManagementService.getParty(eq(partyId))).thenReturn(party);
+        FinalCashFlowPosting finalCashFlowPosting = getFinalCashFlowPosting();
+        finalCashFlowPosting.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
+        finalCashFlowPosting.getDestination().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.payout));
+        finalCashFlowPosting.getVolume().setAmount(5L);
+        FinalCashFlowPosting returnedPayoutFixedFee = new FinalCashFlowPosting(finalCashFlowPosting);
         returnedPayoutFixedFee.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.payout));
         returnedPayoutFixedFee.getDestination().setAccountType(
                 CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
         returnedPayoutFixedFee.getVolume().setAmount(1L);
-        FinalCashFlowPosting returnedFee = new FinalCashFlowPosting(returnedPayoutAmount);
+        FinalCashFlowPosting returnedFee = new FinalCashFlowPosting(finalCashFlowPosting);
         returnedFee.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
         returnedFee.getDestination().setAccountType(CashFlowAccount.system(SystemCashFlowAccount.settlement));
         returnedFee.getVolume().setAmount(1L);
@@ -95,8 +89,8 @@ public class PayoutServiceTest {
                 any(),
                 anyString(),
                 anyString()))
-                .thenReturn(List.of(returnedPayoutAmount, returnedPayoutFixedFee, returnedFee));
-        when(shumwayService.hold(anyString(), anyList())).thenReturn(getPostingPlanLog(returnedShop));
+                .thenReturn(List.of(finalCashFlowPosting, returnedPayoutFixedFee, returnedFee));
+        when(shumwayService.hold(anyString(), anyList())).thenReturn(getPostingPlanLog(shop));
         String payoutId = payoutService.create(
                 partyId,
                 shopId,
@@ -105,7 +99,7 @@ public class PayoutServiceTest {
         assertEquals(4L, payout.getAmount());
         assertEquals(2L, payout.getFee());
         assertEquals(PayoutStatus.UNPAID, payout.getStatus());
-        assertEquals(returnedParty.getShops().get(shopId).getPayoutToolId(), payout.getPayoutToolId());
+        assertEquals(party.getShops().get(shopId).getPayoutToolId(), payout.getPayoutToolId());
         assertEquals(3L, cashFlowPostingService.getCashFlowPostings(payout.getPayoutId()).size());
         assertNotNull(cashFlowPostingService.getCashFlowPostings(payout.getPayoutId()).stream()
                 .filter(cashFlowPosting ->
@@ -116,15 +110,21 @@ public class PayoutServiceTest {
 
     @Test
     public void shouldThrowExceptionAtCreateWhenNotFound() {
+        PayoutTool payoutTool = getPayoutTool();
+        payoutTool.setPayoutToolInfo(PayoutToolInfo.wallet_info(new WalletInfo("id12s")));
+        Contract contract = getContract();
+        contract.getPayoutTools().add(payoutTool);
         String partyId = "partyId";
-        Party party = new Party();
-        Party returnedParty = fillTBaseObject(party, Party.class);
-        returnedParty.setId(partyId);
+        Party party = getParty();
+        party.setId(partyId);
+        party.getContracts().put(contract.getId(), contract);
         String shopId = "shopId";
-        Shop shop = new Shop();
-        Shop returnedShop = fillTBaseObject(shop, Shop.class);
-        returnedShop.setId(shopId);
-        returnedParty.setShops(Map.of(shopId, returnedShop));
+        Shop shop = getShop();
+        shop.setId(shopId);
+        shop.setContractId(contract.getId());
+        shop.setPayoutToolId(payoutTool.getId());
+        shop.setAccount(RandomBeans.randomThriftOnlyRequiredFields(ShopAccount.class));
+        party.setShops(Map.of(shopId, shop));
         when(partyManagementService.getParty(eq(partyId))).thenThrow(NotFoundException.class);
         assertThrows(
                 NotFoundException.class,
@@ -132,7 +132,7 @@ public class PayoutServiceTest {
                         partyId,
                         shopId,
                         buildCash(), null, null));
-        when(partyManagementService.getParty(eq(partyId))).thenReturn(returnedParty);
+        when(partyManagementService.getParty(eq(partyId))).thenReturn(party);
         when(partyManagementService.computePayoutCashFlow(
                 eq(partyId),
                 eq(shopId),
@@ -178,45 +178,17 @@ public class PayoutServiceTest {
         );
     }
 
-    private Cash buildCash() {
-        return new Cash(100L, new CurrencyRef("RUB"));
-    }
-
-    private Party buildNullShopParty(String partyId) {
-        return new Party().setId(partyId).setShops(Map.of());
-    }
-
-    private Party buildNullPayoutTool(String partyId) {
-        return new Party()
-                .setId(partyId)
-                .setShops(Map.of(
-                        "shopId",
-                        new Shop().setContractId("contractId")))
-                .setContracts(Map.of(
-                        "contractId",
-                        new Contract().setPayoutTools(List.of(new PayoutTool().setId("wrongToolId")))
-                ));
-    }
-
-    private Party buildParty(String partyId) {
-        return new Party()
-                .setId(partyId)
-                .setShops(Map.of("shopId", new Shop().setPayoutToolId("payoutToolId")));
-    }
-
     @Test
     public void shouldThrowExceptionAtCreateWhenPayoutToolIdIsNull() {
         String partyId = "partyId";
-        Party party = new Party();
-        Party returnedParty = fillTBaseObject(party, Party.class);
-        returnedParty.setId(partyId);
+        Party party = getParty();
+        party.setId(partyId);
         String shopId = "shopId";
-        Shop shop = new Shop();
-        Shop returnedShop = fillTBaseObject(shop, Shop.class);
-        returnedShop.setId(shopId);
-        returnedShop.setPayoutToolId(null);
-        returnedParty.setShops(Map.of(shopId, returnedShop));
-        when(partyManagementService.getParty(eq(partyId))).thenReturn(returnedParty);
+        Shop shop = getShop();
+        shop.setId(shopId);
+        shop.setPayoutToolId(null);
+        party.setShops(Map.of(shopId, shop));
+        when(partyManagementService.getParty(eq(partyId))).thenReturn(party);
         assertThrows(
                 InvalidRequestException.class,
                 () -> payoutService.create(
@@ -227,27 +199,32 @@ public class PayoutServiceTest {
 
     @Test
     public void shouldThrowExceptionAtCreateWhenComputedAmountIsNull() {
+        PayoutTool payoutTool = getPayoutTool();
+        payoutTool.setPayoutToolInfo(PayoutToolInfo.wallet_info(new WalletInfo("id12s")));
+        Contract contract = getContract();
+        contract.getPayoutTools().add(payoutTool);
         String partyId = "partyId";
-        Party party = new Party();
-        Party returnedParty = fillTBaseObject(party, Party.class);
-        returnedParty.setId(partyId);
+        Party party = getParty();
+        party.setId(partyId);
+        party.getContracts().put(contract.getId(), contract);
         String shopId = "shopId";
-        Shop shop = new Shop();
-        Shop returnedShop = fillTBaseObject(shop, Shop.class);
-        returnedShop.setId(shopId);
-        returnedParty.setShops(Map.of(shopId, returnedShop));
-        when(partyManagementService.getParty(eq(partyId))).thenReturn(returnedParty);
-        FinalCashFlowPosting finalCashFlowPosting = new FinalCashFlowPosting();
-        FinalCashFlowPosting returnedPayoutAmount = fillTBaseObject(finalCashFlowPosting, FinalCashFlowPosting.class);
-        returnedPayoutAmount.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
-        returnedPayoutAmount.getDestination().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.payout));
-        returnedPayoutAmount.getVolume().setAmount(1L);
-        FinalCashFlowPosting returnedPayoutFixedFee = new FinalCashFlowPosting(returnedPayoutAmount);
+        Shop shop = getShop();
+        shop.setId(shopId);
+        shop.setContractId(contract.getId());
+        shop.setPayoutToolId(payoutTool.getId());
+        shop.setAccount(RandomBeans.randomThriftOnlyRequiredFields(ShopAccount.class));
+        party.setShops(Map.of(shopId, shop));
+        when(partyManagementService.getParty(eq(partyId))).thenReturn(party);
+        FinalCashFlowPosting finalCashFlowPosting = getFinalCashFlowPosting();
+        finalCashFlowPosting.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
+        finalCashFlowPosting.getDestination().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.payout));
+        finalCashFlowPosting.getVolume().setAmount(1L);
+        FinalCashFlowPosting returnedPayoutFixedFee = new FinalCashFlowPosting(finalCashFlowPosting);
         returnedPayoutFixedFee.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.payout));
         returnedPayoutFixedFee.getDestination().setAccountType(
                 CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
         returnedPayoutFixedFee.getVolume().setAmount(1L);
-        FinalCashFlowPosting returnedFee = new FinalCashFlowPosting(returnedPayoutAmount);
+        FinalCashFlowPosting returnedFee = new FinalCashFlowPosting(finalCashFlowPosting);
         returnedFee.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
         returnedFee.getDestination().setAccountType(CashFlowAccount.system(SystemCashFlowAccount.settlement));
         returnedFee.getVolume().setAmount(1L);
@@ -257,7 +234,7 @@ public class PayoutServiceTest {
                 any(),
                 anyString(),
                 anyString()))
-                .thenReturn(List.of(returnedPayoutAmount, returnedPayoutFixedFee, returnedFee));
+                .thenReturn(List.of(finalCashFlowPosting, returnedPayoutFixedFee, returnedFee));
         assertThrows(
                 InsufficientFundsException.class,
                 () -> payoutService.create(
@@ -268,36 +245,32 @@ public class PayoutServiceTest {
 
     @Test
     public void shouldThrowExceptionAtCreateWhenBalanceAmountIsNegative() {
-        PayoutTool payoutTool = new PayoutTool();
-        PayoutTool returnedPayoutTool = fillTBaseObject(payoutTool, PayoutTool.class);
-        returnedPayoutTool.setPayoutToolInfo(PayoutToolInfo.wallet_info(new WalletInfo("id12s")));
-        Contract contract = new Contract();
-        Contract returnedContract = fillTBaseObject(contract, Contract.class);
-        returnedContract.getPayoutTools().add(returnedPayoutTool);
+        PayoutTool payoutTool = getPayoutTool();
+        payoutTool.setPayoutToolInfo(PayoutToolInfo.wallet_info(new WalletInfo("id12s")));
+        Contract contract = getContract();
+        contract.getPayoutTools().add(payoutTool);
         String partyId = "partyId";
-        Party party = new Party();
-        Party returnedParty = fillTBaseObject(party, Party.class);
-        returnedParty.setId(partyId);
-        returnedParty.getContracts().put(returnedContract.getId(), returnedContract);
+        Party party = getParty();
+        party.setId(partyId);
+        party.getContracts().put(contract.getId(), contract);
         String shopId = "shopId";
-        Shop shop = new Shop();
-        Shop returnedShop = fillTBaseObject(shop, Shop.class);
-        returnedShop.setId(shopId);
-        returnedShop.setContractId(returnedContract.getId());
-        returnedShop.setPayoutToolId(returnedPayoutTool.getId());
-        returnedParty.setShops(Map.of(shopId, returnedShop));
-        when(partyManagementService.getParty(eq(partyId))).thenReturn(returnedParty);
-        FinalCashFlowPosting finalCashFlowPosting = new FinalCashFlowPosting();
-        FinalCashFlowPosting returnedPayoutAmount = fillTBaseObject(finalCashFlowPosting, FinalCashFlowPosting.class);
-        returnedPayoutAmount.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
-        returnedPayoutAmount.getDestination().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.payout));
-        returnedPayoutAmount.getVolume().setAmount(5L);
-        FinalCashFlowPosting returnedPayoutFixedFee = new FinalCashFlowPosting(returnedPayoutAmount);
+        Shop shop = getShop();
+        shop.setId(shopId);
+        shop.setContractId(contract.getId());
+        shop.setPayoutToolId(payoutTool.getId());
+        shop.setAccount(RandomBeans.randomThriftOnlyRequiredFields(ShopAccount.class));
+        party.setShops(Map.of(shopId, shop));
+        when(partyManagementService.getParty(eq(partyId))).thenReturn(party);
+        FinalCashFlowPosting finalCashFlowPosting = getFinalCashFlowPosting();
+        finalCashFlowPosting.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
+        finalCashFlowPosting.getDestination().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.payout));
+        finalCashFlowPosting.getVolume().setAmount(5L);
+        FinalCashFlowPosting returnedPayoutFixedFee = new FinalCashFlowPosting(finalCashFlowPosting);
         returnedPayoutFixedFee.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.payout));
         returnedPayoutFixedFee.getDestination().setAccountType(
                 CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
         returnedPayoutFixedFee.getVolume().setAmount(1L);
-        FinalCashFlowPosting returnedFee = new FinalCashFlowPosting(returnedPayoutAmount);
+        FinalCashFlowPosting returnedFee = new FinalCashFlowPosting(finalCashFlowPosting);
         returnedFee.getSource().setAccountType(CashFlowAccount.merchant(MerchantCashFlowAccount.settlement));
         returnedFee.getDestination().setAccountType(CashFlowAccount.system(SystemCashFlowAccount.settlement));
         returnedFee.getVolume().setAmount(1L);
@@ -307,10 +280,10 @@ public class PayoutServiceTest {
                 any(),
                 anyString(),
                 anyString()))
-                .thenReturn(List.of(returnedPayoutAmount, returnedPayoutFixedFee, returnedFee));
-        var account = new Account(returnedShop.getAccount().getSettlement(), 1, 1, 1, "RUB");
+                .thenReturn(List.of(finalCashFlowPosting, returnedPayoutFixedFee, returnedFee));
+        var account = new Account(shop.getAccount().getSettlement(), 1, 1, 1, "RUB");
         when(shumwayService.hold(anyString(), anyList()))
-                .thenReturn(new PostingPlanLog(Map.of(returnedShop.getAccount().getSettlement() - 1L, account)));
+                .thenReturn(new PostingPlanLog(Map.of(shop.getAccount().getSettlement() - 1L, account)));
         doNothing().when(shumwayService).rollback(anyString());
         assertThrows(
                 InsufficientFundsException.class,
@@ -348,6 +321,22 @@ public class PayoutServiceTest {
     }
 
     @Test
+    public void shouldOnConfirmCreateDeposit() {
+        Payout payout = random(Payout.class, "payoutToolInfo");
+        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.WALLET_INFO);
+        saveRandomPayout(payout);
+        doNothing().when(shumwayService).commit(anyString());
+        payoutService.confirm(payout.getPayoutId());
+        assertEquals(PayoutStatus.CONFIRMED, payoutService.get(payout.getPayoutId()).getStatus());
+        verify(shumwayService, times(1)).commit(anyString());
+        payoutService.confirm(payout.getPayoutId());
+        assertEquals(PayoutStatus.CONFIRMED, payoutService.get(payout.getPayoutId()).getStatus());
+        verify(shumwayService, times(1)).commit(anyString());
+        verify(fistfulService, times(1)).createDeposit(anyString(), anyString(),
+                anyLong(), anyString());
+    }
+
+    @Test
     public void shouldThrowExceptionAtConfirmWhenPayoutNotFound() {
         assertThrows(
                 NotFoundException.class,
@@ -382,21 +371,6 @@ public class PayoutServiceTest {
         verify(shumwayService, times(0)).revert(anyString());
     }
 
-    private Payout saveRandomPayout(Payout payout) {
-        payoutService.save(
-                payout.getPayoutId(),
-                payout.getCreatedAt(),
-                payout.getPartyId(),
-                payout.getShopId(),
-                payout.getPayoutToolId(),
-                payout.getAmount(),
-                payout.getFee(),
-                payout.getCurrencyCode(),
-                payout.getPayoutToolInfo(),
-                payout.getWalletId());
-        return payout;
-    }
-
     @Test
     public void shouldCancelAfterConfirm() {
         Payout payout = random(Payout.class, "payoutToolInfo");
@@ -418,13 +392,69 @@ public class PayoutServiceTest {
                 () -> payoutService.cancel(generatePayoutId(), DETAILS));
     }
 
-    @SneakyThrows
-    public <T extends TBase> T fillTBaseObject(T value, Class<T> type) {
-        return mockTBaseProcessor.process(value, new TBaseHandler<>(type));
+    private Payout saveRandomPayout(Payout payout) {
+        payoutService.save(
+                payout.getPayoutId(),
+                payout.getCreatedAt(),
+                payout.getPartyId(),
+                payout.getShopId(),
+                payout.getPayoutToolId(),
+                payout.getAmount(),
+                payout.getFee(),
+                payout.getCurrencyCode(),
+                payout.getPayoutToolInfo(),
+                payout.getWalletId());
+        return payout;
     }
 
-    private PostingPlanLog getPostingPlanLog(Shop returnedShop) {
-        var account = new Account(returnedShop.getAccount().getSettlement(), 1, 1, 1, "RUB");
-        return new PostingPlanLog(Map.of(returnedShop.getAccount().getSettlement(), account));
+    private Shop getShop() {
+        return RandomBeans.randomThriftOnlyRequiredFields(Shop.class);
+    }
+
+    private Party getParty() {
+        return RandomBeans.randomThriftOnlyRequiredFields(Party.class);
+    }
+
+    private Contract getContract() {
+        return RandomBeans.randomThriftOnlyRequiredFields(Contract.class);
+    }
+
+    private PayoutTool getPayoutTool() {
+        return RandomBeans.randomThriftOnlyRequiredFields(PayoutTool.class);
+    }
+
+    private FinalCashFlowPosting getFinalCashFlowPosting() {
+        return RandomBeans.randomThriftOnlyRequiredFields(FinalCashFlowPosting.class);
+    }
+
+    private PostingPlanLog getPostingPlanLog(Shop shop) {
+        var account = new Account(shop.getAccount().getSettlement(), 1, 1, 1, "RUB");
+        return new PostingPlanLog(Map.of(shop.getAccount().getSettlement(), account));
+    }
+
+    private Cash buildCash() {
+        return new Cash(100L, new CurrencyRef("RUB"));
+    }
+
+    private Party buildNullShopParty(String partyId) {
+        return new Party().setId(partyId).setShops(Map.of());
+    }
+
+    private Party buildNullPayoutTool(String partyId) {
+        return new Party()
+                .setId(partyId)
+                .setShops(Map.of(
+                        "shopId",
+                        new Shop().setContractId("contractId")))
+                .setContracts(Map.of(
+                        "contractId",
+                        new Contract().setPayoutTools(List.of(new PayoutTool().setId("wrongToolId")))
+                ));
+    }
+
+    private Party buildParty(String partyId) {
+        return new Party()
+                .setId(partyId)
+                .setShops(Map.of("shopId", new Shop().setPayoutToolId("payoutToolId")));
     }
 }

@@ -12,7 +12,6 @@ import dev.vality.payout.manager.domain.tables.pojos.Payout;
 import dev.vality.payout.manager.exception.InsufficientFundsException;
 import dev.vality.payout.manager.exception.InvalidRequestException;
 import dev.vality.payout.manager.service.CashFlowPostingService;
-import dev.vality.payout.manager.service.FistfulService;
 import dev.vality.payout.manager.service.PayoutKafkaProducerService;
 import dev.vality.payout.manager.service.PayoutService;
 import org.apache.thrift.TException;
@@ -55,8 +54,6 @@ public class PayoutManagementHandlerTest {
     private CashFlowPostingService cashFlowPostingService;
     @MockBean
     private PayoutKafkaProducerService payoutKafkaProducerService;
-    @MockBean
-    private FistfulService fistfulService;
 
     @Autowired
     private PayoutManagementHandler payoutManagementHandler;
