@@ -337,6 +337,19 @@ public class PayoutServiceTest {
     }
 
     @Test
+    public void shouldThrowCreateDepositOnConfirm() {
+        Payout payout = random(Payout.class, "payoutToolInfo");
+        payout.setPayoutToolInfo(dev.vality.payout.manager.domain.enums.PayoutToolInfo.WALLET_INFO);
+        saveRandomPayout(payout);
+        doNothing().when(shumwayService).commit(anyString());
+        doThrow(RuntimeException.class).when(fistfulService).createDeposit(anyString(), anyString(),
+                anyLong(), anyString());
+        assertThrows(RuntimeException.class, () -> payoutService.confirm(payout.getPayoutId()));
+        verify(shumwayService, times(1)).commit(anyString());
+        verify(shumwayService, times(1)).revert(anyString());
+    }
+
+    @Test
     public void shouldThrowExceptionAtConfirmWhenPayoutNotFound() {
         assertThrows(
                 NotFoundException.class,
