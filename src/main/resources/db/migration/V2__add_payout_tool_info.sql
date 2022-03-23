@@ -4,9 +4,6 @@ alter table pm.payout
 alter table pm.payout
     add column wallet_id character varying;
 create type pm.payout_status_new as enum ('UNPAID', 'CONFIRMED', 'CANCELLED');
-delete
-from pm.payout
-where status = 'PAID';
 alter table pm.payout alter column status type pm.payout_status_new using (status::text::pm.payout_status_new);
 drop type pm.payout_status;
 alter type pm.payout_status_new rename to payout_status;

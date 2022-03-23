@@ -435,10 +435,7 @@ public class PayoutServiceTest {
         payoutService.confirm(payout.getPayoutId());
         assertEquals(PayoutStatus.CONFIRMED, payoutService.get(payout.getPayoutId()).getStatus());
         doNothing().when(shumwayService).revert(anyString());
-        payoutService.cancel(payout.getPayoutId(), DETAILS);
-        assertEquals(PayoutStatus.CANCELLED, payoutService.get(payout.getPayoutId()).getStatus());
-        verify(shumwayService, times(0)).rollback(anyString());
-        verify(shumwayService, times(1)).revert(anyString());
+        assertThrows(InvalidStateException.class, () -> payoutService.cancel(payout.getPayoutId(), DETAILS));
     }
 
     @Test

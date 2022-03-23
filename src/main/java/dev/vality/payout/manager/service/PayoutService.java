@@ -82,8 +82,11 @@ public class PayoutService {
         if (payoutToolInfo.isSetWalletInfo()) {
             walletId = payoutToolInfo.getWalletInfo().getWalletId();
         }
+        var domainPayoutToolInfo = TypeUtil.toEnumField(
+                payoutToolInfo.getSetField().getFieldName(),
+                dev.vality.payout.manager.domain.enums.PayoutToolInfo.class);
         save(payoutId, localDateTime, partyId, shopId, payoutToolId,
-                amount, fee, cash.getCurrency().getSymbolicCode(), getPayoutToolInfo(payoutToolInfo), walletId);
+                amount, fee, cash.getCurrency().getSymbolicCode(), domainPayoutToolInfo, walletId);
         var cashFlowPostings = toDomainCashFlows(payoutId, localDateTime, finalCashFlowPostings);
         cashFlowPostingService.save(cashFlowPostings);
         var postingPlanLog = shumwayService.hold(payoutId, cashFlowPostings);
@@ -180,17 +183,10 @@ public class PayoutService {
                 return;
             }
             payoutDao.changeStatus(payoutId, PayoutStatus.CANCELLED, details);
-            switch (payout.getStatus()) {
-                case UNPAID -> shumwayService.rollback(payoutId);
-                case CONFIRMED -> {
-                    if (payout.getPayoutToolInfo() ==
-                            dev.vality.payout.manager.domain.enums.PayoutToolInfo.WALLET_INFO) {
-                        throw new InvalidStateException(String.format("Unable to cancel confirmed payout to wallet, " +
-                                "payoutId='%s'", payoutId));
-                    }
-                    shumwayService.revert(payoutId);
-                }
-                default -> throw new InvalidStateException(String.format("Invalid status for 'cancel' action, " +
+            if (payout.getStatus() == PayoutStatus.UNPAID) {
+                shumwayService.rollback(payoutId);
+            } else {
+                throw new InvalidStateException(String.format("Invalid status for 'cancel' action, " +
                         "payoutId='%s', currentStatus='%s'", payoutId, payout.getStatus()));
             }
             log.info("Payout has been cancelled, payoutId='{}'", payoutId);
@@ -220,19 +216,6 @@ public class PayoutService {
                 .map(PayoutTool::getPayoutToolInfo)
                 .orElseThrow(() ->
                         new NotFoundException(String.format("PayoutTool not found, payoutToolId='%s'", payoutToolId)));
-    }
-
-    private dev.vality.payout.manager.domain.enums.PayoutToolInfo getPayoutToolInfo(PayoutToolInfo payoutToolInfo) {
-        return switch (payoutToolInfo.getSetField()) {
-            case WALLET_INFO -> dev.vality.payout.manager.domain.enums.PayoutToolInfo.WALLET_INFO;
-            case RUSSIAN_BANK_ACCOUNT -> dev.vality.payout.manager.domain.enums.PayoutToolInfo.RUSSIAN_BANK_ACCOUNT;
-            case INTERNATIONAL_BANK_ACCOUNT -> {
-                yield dev.vality.payout.manager.domain.enums.PayoutToolInfo.INTERNATIONAL_BANK_ACCOUNT;
-            }
-            case PAYMENT_INSTITUTION_ACCOUNT -> {
-                yield dev.vality.payout.manager.domain.enums.PayoutToolInfo.PAYMENT_INSTITUTION_ACCOUNT;
-            }
-        };
     }
 
     private void validateAccount(String shopId, String payoutId, Party party, PostingPlanLog postingPlanLog) {
