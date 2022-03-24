@@ -23,7 +23,7 @@ public class CreatedSourceHandlerImpl implements SourceHandler {
 
     @Override
     public void handle(TimestampedChange change, MachineEvent event) {
-        String sourceId = change.getChange().getCreated().getId();
+        String sourceId  = change.getChange().getCreated().getId();
         Source source = new Source();
         source.setSourceId(sourceId);
         source.setStatus(SourceStatus.UNAUTHORIZED);
