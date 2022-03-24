@@ -163,6 +163,7 @@ public class PayoutService {
                     fistfulService.createDeposit(payoutId, payout.getWalletId(),
                             payout.getAmount(), payout.getCurrencyCode());
                 } catch (Exception ex) {
+                    payoutDao.changeStatus(payoutId, PayoutStatus.CANCELLED);
                     shumwayService.revert(payoutId);
                     throw ex;
                 }
