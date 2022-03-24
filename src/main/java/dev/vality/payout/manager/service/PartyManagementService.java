@@ -32,9 +32,6 @@ public class PartyManagementService {
         } catch (PartyNotFound ex) {
             throw new NotFoundException(
                     String.format("Party not found, partyId='%s'", partyId), ex);
-        } catch (InvalidPartyRevision ex) {
-            throw new NotFoundException(
-                    String.format("Invalid party revision, partyId='%s'", partyId), ex);
         } catch (TException ex) {
             throw new RuntimeException(
                     String.format("Failed to get party, partyId='%s'", partyId), ex);

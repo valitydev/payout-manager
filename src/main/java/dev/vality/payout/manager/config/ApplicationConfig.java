@@ -2,7 +2,7 @@ package dev.vality.payout.manager.config;
 
 import dev.vality.damsel.accounter.AccounterSrv;
 import dev.vality.damsel.payment_processing.PartyManagementSrv;
-import dev.vality.fistful.admin.FistfulAdminSrv;
+import dev.vality.fistful.deposit.ManagementSrv;
 import dev.vality.woody.thrift.impl.http.THSpawnClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -36,12 +36,12 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public FistfulAdminSrv.Iface fistfulAdminClient(
-            @Value("${service.fistful.url}") Resource resource,
-            @Value("${service.fistful.networkTimeout}") int networkTimeout
+    public ManagementSrv.Iface fistfulDepositClient(
+            @Value("${service.fistful.deposit.url}") Resource resource,
+            @Value("${service.fistful.deposit.networkTimeout}") int networkTimeout
     ) throws IOException {
         return new THSpawnClientBuilder()
                 .withNetworkTimeout(networkTimeout)
-                .withAddress(resource.getURI()).build(FistfulAdminSrv.Iface.class);
+                .withAddress(resource.getURI()).build(ManagementSrv.Iface.class);
     }
 }

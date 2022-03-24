@@ -163,9 +163,10 @@ public class PayoutService {
                     fistfulService.createDeposit(payoutId, payout.getWalletId(),
                             payout.getAmount(), payout.getCurrencyCode());
                 } catch (Exception ex) {
-                    payoutDao.changeStatus(payoutId, PayoutStatus.CANCELLED);
+                    log.warn("Failed to confirm then fistfulService.createDeposit", ex);
+                    payoutDao.changeStatus(payoutId, PayoutStatus.FAILED);
                     shumwayService.revert(payoutId);
-                    throw ex;
+                    return;
                 }
             }
             log.info("Payout has been confirmed, payoutId='{}'", payoutId);

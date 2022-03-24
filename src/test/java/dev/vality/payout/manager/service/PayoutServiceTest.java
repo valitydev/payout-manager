@@ -387,11 +387,11 @@ public class PayoutServiceTest {
         doNothing().when(shumwayService).commit(anyString());
         doThrow(RuntimeException.class).when(fistfulService).createDeposit(anyString(), anyString(),
                 anyLong(), anyString());
-        assertThrows(RuntimeException.class, () -> payoutService.confirm(payout.getPayoutId()));
+        payoutService.confirm(payout.getPayoutId());
         verify(shumwayService, times(1)).commit(anyString());
         verify(shumwayService, times(1)).revert(anyString());
         Payout payout1 = payoutService.get(payout.getPayoutId());
-        assertEquals(PayoutStatus.CANCELLED, payout1.getStatus());
+        assertEquals(PayoutStatus.FAILED, payout1.getStatus());
     }
 
     @Test

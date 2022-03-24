@@ -66,6 +66,16 @@
             <artifactId>fistful-proto</artifactId>
             <version>1.141-fd4117f</version>
         </dependency>
+        <dependency>
+            <groupId>dev.vality</groupId>
+            <artifactId>machinegun-proto</artifactId>
+            <version>1.27-dec518d</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.vality</groupId>
+            <artifactId>sink-common-lib</artifactId>
+            <version>0.0.1</version>
+        </dependency>
 
         <!--spring-->
         <dependency>

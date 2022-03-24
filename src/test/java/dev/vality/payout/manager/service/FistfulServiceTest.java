@@ -1,8 +1,8 @@
 package dev.vality.payout.manager.service;
 
 import dev.vality.fistful.SourceNotFound;
-import dev.vality.fistful.admin.FistfulAdminSrv;
-import dev.vality.fistful.deposit.Deposit;
+import dev.vality.fistful.deposit.DepositState;
+import dev.vality.fistful.deposit.ManagementSrv;
 import dev.vality.payout.manager.exception.NotFoundException;
 import org.apache.thrift.TException;
 import org.junit.jupiter.api.Test;
@@ -34,20 +34,20 @@ import static org.mockito.Mockito.when;
 public class FistfulServiceTest {
 
     @MockBean
-    private FistfulAdminSrv.Iface fistfulAdminClient;
+    private ManagementSrv.Iface fistfulDepositClient;
 
     @Autowired
     private FistfulService fistfulService;
 
     @Test
     public void shouldCreate() throws TException {
-        when(fistfulAdminClient.createDeposit(any())).thenReturn(new Deposit());
+        when(fistfulDepositClient.create(any(), any())).thenReturn(new DepositState());
         assertNotNull(fistfulService.createDeposit("payoutId", "walletId", 1L, "currencyCode"));
     }
 
     @Test
     public void shouldThrowException() throws TException {
-        when(fistfulAdminClient.createDeposit(any())).thenThrow(SourceNotFound.class);
+        when(fistfulDepositClient.create(any(), any())).thenThrow(SourceNotFound.class);
         assertThrows(NotFoundException.class, () ->
                 fistfulService.createDeposit("payoutId", "walletId", 1L, "currencyCode"));
     }

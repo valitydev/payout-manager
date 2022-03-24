@@ -25,7 +25,7 @@ import static org.apache.kafka.common.security.auth.SecurityProtocol.SSL;
 @Configuration
 @Slf4j
 @RequiredArgsConstructor
-public class KafkaConfig {
+public class KafkaProducerConfig {
 
     private final KafkaSslProperties kafkaSslProperties;
 
