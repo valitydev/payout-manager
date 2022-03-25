@@ -1,7 +1,7 @@
 package dev.vality.payout.manager.config;
 
 import dev.vality.testcontainers.annotations.KafkaSpringBootTest;
-import dev.vality.testcontainers.annotations.kafka.KafkaTestcontainerSingleton;
+import dev.vality.testcontainers.annotations.kafka.KafkaTestcontainer;
 import dev.vality.testcontainers.annotations.postgresql.PostgresqlTestcontainerSingleton;
 import org.springframework.context.annotation.Import;
 
@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @PostgresqlTestcontainerSingleton
-@KafkaTestcontainerSingleton(
+@KafkaTestcontainer(
         properties = {
                 "kafka.topic.pm-events-payout.produce.enabled=true",
                 "kafka.topic.source.consume.enabled=true"},
