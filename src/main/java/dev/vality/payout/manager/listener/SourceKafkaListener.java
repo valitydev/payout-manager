@@ -30,7 +30,7 @@ public class SourceKafkaListener {
             autoStartup = "${kafka.topic.source.consume.enabled}",
             topics = "${kafka.topic.source.name}",
             containerFactory = "sourceContainerFactory")
-    public void handle(List<ConsumerRecord<String, SinkEvent>> messages, Acknowledgment ack) {
+    public void listen(List<ConsumerRecord<String, SinkEvent>> messages, Acknowledgment ack) {
         log.info("SourceKafkaListener listen offsets, size={}, {}",
                 messages.size(), LogUtil.toSummaryStringWithSinkEventValues(messages));
         List<MachineEvent> machineEvents = messages.stream()

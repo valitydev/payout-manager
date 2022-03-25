@@ -36,7 +36,8 @@ public class SourceDaoImpl extends AbstractGenericDao implements SourceDao {
                 .insertInto(SOURCE)
                 .set(record)
                 .onConflict(SOURCE.SOURCE_ID)
-                .doNothing()
+                .doUpdate()
+                .set(record)
                 .returning(SOURCE.ID);
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         execute(query, keyHolder);

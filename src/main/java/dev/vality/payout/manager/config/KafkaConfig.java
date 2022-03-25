@@ -1,20 +1,27 @@
 package dev.vality.payout.manager.config;
 
+import dev.vality.kafka.common.serialization.ThriftSerializer;
 import dev.vality.machinegun.eventsink.SinkEvent;
+import dev.vality.payout.manager.Event;
 import dev.vality.payout.manager.config.properties.KafkaSslProperties;
 import dev.vality.payout.manager.serde.SinkEventDeserializer;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.core.DefaultKafkaProducerFactory;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.SeekToCurrentBatchErrorHandler;
 
@@ -26,7 +33,7 @@ import static org.apache.kafka.clients.consumer.OffsetResetStrategy.EARLIEST;
 
 @Configuration
 @EnableConfigurationProperties(KafkaSslProperties.class)
-public class KafkaConsumerConfig {
+public class KafkaConfig {
 
     @Value("${kafka.bootstrap-servers}")
     private String bootstrapServers;
@@ -63,6 +70,11 @@ public class KafkaConsumerConfig {
         return containerFactory;
     }
 
+    @Bean
+    public KafkaTemplate<String, Event> kafkaTemplate(KafkaSslProperties kafkaSslProperties) {
+        return new KafkaTemplate<>(producerFactory(kafkaSslProperties));
+    }
+
     private <T> void configureContainerFactory(
             ConcurrentKafkaListenerContainerFactory<String, T> containerFactory,
             Deserializer<T> deserializer,
@@ -78,6 +90,15 @@ public class KafkaConsumerConfig {
         containerFactory.setBatchErrorHandler(new SeekToCurrentBatchErrorHandler());
         containerFactory.setBatchListener(true);
         containerFactory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
+    }
+
+    private ProducerFactory<String, Event> producerFactory(KafkaSslProperties kafkaSslProperties) {
+        Map<String, Object> config = new HashMap<>();
+        config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ThriftSerializer.class);
+        configureSsl(config, kafkaSslProperties);
+        return new DefaultKafkaProducerFactory<>(config);
     }
 
     private <T> DefaultKafkaConsumerFactory<String, T> createKafkaConsumerFactory(

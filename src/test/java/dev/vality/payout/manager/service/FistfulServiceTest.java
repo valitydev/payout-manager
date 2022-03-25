@@ -3,6 +3,9 @@ package dev.vality.payout.manager.service;
 import dev.vality.fistful.SourceNotFound;
 import dev.vality.fistful.deposit.DepositState;
 import dev.vality.fistful.deposit.ManagementSrv;
+import dev.vality.payout.manager.dao.SourceDao;
+import dev.vality.payout.manager.domain.enums.SourceStatus;
+import dev.vality.payout.manager.domain.tables.pojos.Source;
 import dev.vality.payout.manager.exception.NotFoundException;
 import org.apache.thrift.TException;
 import org.junit.jupiter.api.Test;
@@ -35,6 +38,8 @@ public class FistfulServiceTest {
 
     @MockBean
     private ManagementSrv.Iface fistfulDepositClient;
+    @MockBean
+    private SourceDao sourceDao;
 
     @Autowired
     private FistfulService fistfulService;
@@ -42,12 +47,16 @@ public class FistfulServiceTest {
     @Test
     public void shouldCreate() throws TException {
         when(fistfulDepositClient.create(any(), any())).thenReturn(new DepositState());
+        when(sourceDao.getByCurrencyCode(any())).thenReturn(
+                new Source(0L, "id", SourceStatus.AUTHORIZED, "id"));
         assertNotNull(fistfulService.createDeposit("payoutId", "walletId", 1L, "currencyCode"));
     }
 
     @Test
     public void shouldThrowException() throws TException {
         when(fistfulDepositClient.create(any(), any())).thenThrow(SourceNotFound.class);
+        when(sourceDao.getByCurrencyCode(any())).thenReturn(
+                new Source(0L, "id", SourceStatus.AUTHORIZED, "id"));
         assertThrows(NotFoundException.class, () ->
                 fistfulService.createDeposit("payoutId", "walletId", 1L, "currencyCode"));
     }

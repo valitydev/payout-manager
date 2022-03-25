@@ -17,7 +17,7 @@ import java.util.List;
 public class SourceHandlerService {
 
     private final SourceChangeMachineEventParser parser;
-    private final List<SourceHandler> payoutHandlers;
+    private final List<SourceHandler> sourceHandlers;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void handleEvents(List<MachineEvent> machineEvents) {
@@ -26,7 +26,7 @@ public class SourceHandlerService {
 
     private void handleIfAccept(MachineEvent event) {
         var timestampedChange = parser.parse(event);
-        payoutHandlers.stream()
+        sourceHandlers.stream()
                 .filter(handler -> handler.accept(timestampedChange))
                 .forEach(handler -> handler.handle(timestampedChange, event));
     }
