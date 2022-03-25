@@ -2,11 +2,9 @@ package dev.vality.payout.manager.kafka;
 
 import dev.vality.machinegun.eventsink.MachineEvent;
 import dev.vality.machinegun.eventsink.SinkEvent;
+import dev.vality.payout.manager.config.KafkaPostgresqlSpringBootITest;
 import dev.vality.payout.manager.service.SourceHandlerService;
-import dev.vality.testcontainers.annotations.KafkaSpringBootTest;
-import dev.vality.testcontainers.annotations.kafka.KafkaTestcontainerSingleton;
 import dev.vality.testcontainers.annotations.kafka.config.KafkaProducer;
-import dev.vality.testcontainers.annotations.postgresql.PostgresqlTestcontainerSingleton;
 import org.apache.thrift.TBase;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -23,11 +21,7 @@ import java.util.List;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-@PostgresqlTestcontainerSingleton
-@KafkaTestcontainerSingleton(
-        properties = {"kafka.topic.pm-events-payout.produce.enabled=true", "kafka.topic.source.consume.enabled=true"},
-        topicsKeys = {"kafka.topic.pm-events-payout.name", "kafka.topic.source.name"})
-@KafkaSpringBootTest
+@KafkaPostgresqlSpringBootITest
 public class SourceListenerTest {
 
     @Value("${kafka.topic.source.name}")
