@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @PostgresqlTestcontainerSingleton
 @KafkaTestcontainerSingleton(
-        properties = "kafka.topic.pm-events-payout.produce.enabled=true",
+        properties = {"kafka.topic.pm-events-payout.produce.enabled=true", "kafka.topic.source.consume.enabled=true"},
         topicsKeys = {"kafka.topic.pm-events-payout.name", "kafka.topic.source.name"})
 @KafkaSpringBootTest
 @Import(KafkaConsumerConfig.class)
