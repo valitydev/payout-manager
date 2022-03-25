@@ -39,7 +39,7 @@
         <dependency>
             <groupId>dev.vality</groupId>
             <artifactId>payout-manager-proto</artifactId>
-            <version>1.33-1478333</version>
+            <version>1.34-2595084</version>
         </dependency>
         <dependency>
             <groupId>dev.vality.woody</groupId>

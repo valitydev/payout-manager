@@ -5,7 +5,6 @@ import dev.vality.geck.common.util.TypeUtil;
 import dev.vality.payout.manager.*;
 import dev.vality.payout.manager.domain.enums.AccountType;
 import dev.vality.payout.manager.domain.tables.pojos.CashFlowPosting;
-import dev.vality.payout.manager.exception.NotFoundException;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -88,7 +87,7 @@ public class ThriftUtil {
             case UNPAID -> PayoutStatus.unpaid(new PayoutUnpaid());
             case CONFIRMED -> PayoutStatus.confirmed(new PayoutConfirmed());
             case CANCELLED -> PayoutStatus.cancelled(new PayoutCancelled(cancelDetails));
-            default -> throw new NotFoundException(String.format("Payout status not found, status = %s", payoutStatus));
+            case FAILED -> PayoutStatus.failed(new PayoutFailed());
         };
     }
 
