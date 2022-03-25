@@ -26,9 +26,9 @@ import static org.mockito.Mockito.verify;
 @PostgresqlTestcontainerSingleton
 @KafkaTestcontainerSingleton(
         properties = "kafka.topic.source.consume.enabled=true",
-        topicsKeys = "kafka.topic.source.name")
+        topicsKeys = {"kafka.topic.pm-events-payout.name", "kafka.topic.source.name"})
 @KafkaSpringBootTest
-public class PayoutListenerTest {
+public class SourceListenerTest {
 
     @Value("${kafka.topic.source.name}")
     private String sourceTopicName;

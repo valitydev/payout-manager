@@ -1,6 +1,7 @@
 package dev.vality.payout.manager.kafka;
 
 import dev.vality.payout.manager.Event;
+import dev.vality.payout.manager.config.KafkaConsumerConfig;
 import dev.vality.payout.manager.domain.tables.pojos.CashFlowPosting;
 import dev.vality.payout.manager.domain.tables.pojos.Payout;
 import dev.vality.payout.manager.service.PayoutKafkaProducerService;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.rnorth.ducttape.unreliables.Unreliables;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Import;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,8 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @PostgresqlTestcontainerSingleton
 @KafkaTestcontainerSingleton(
         properties = "kafka.topic.pm-events-payout.produce.enabled=true",
-        topicsKeys = "kafka.topic.pm-events-payout.name")
+        topicsKeys = {"kafka.topic.pm-events-payout.name", "kafka.topic.source.name"})
 @KafkaSpringBootTest
+@Import(KafkaConsumerConfig.class)
 public class PayoutKafkaProducerTest {
 
     private static final int TIMEOUT = 5;
