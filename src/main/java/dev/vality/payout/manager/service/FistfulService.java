@@ -28,7 +28,7 @@ public class FistfulService {
         DepositParams depositParams = new DepositParams();
         depositParams.setId(toDepositId(payoutId));
         depositParams.setWalletId(walletId);
-        depositParams.setSourceId(sourceDao.getByCurrencyCode(currencyCode).getSourceId());
+        depositParams.setSourceId(sourceDao.getAuthorizedByCurrencyCode(currencyCode).getSourceId());
         depositParams.setBody(new Cash(amount, new CurrencyRef(currencyCode)));
         log.info("Trying to create deposit, depositParams='{}'", depositParams);
         try {

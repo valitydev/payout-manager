@@ -47,7 +47,7 @@ public class FistfulServiceTest {
     @Test
     public void shouldCreate() throws TException {
         when(fistfulDepositClient.create(any(), any())).thenReturn(new DepositState());
-        when(sourceDao.getByCurrencyCode(any())).thenReturn(
+        when(sourceDao.getAuthorizedByCurrencyCode(any())).thenReturn(
                 new Source(0L, "id", SourceStatus.AUTHORIZED, "id"));
         assertNotNull(fistfulService.createDeposit("payoutId", "walletId", 1L, "currencyCode"));
     }
@@ -55,7 +55,7 @@ public class FistfulServiceTest {
     @Test
     public void shouldThrowException() throws TException {
         when(fistfulDepositClient.create(any(), any())).thenThrow(SourceNotFound.class);
-        when(sourceDao.getByCurrencyCode(any())).thenReturn(
+        when(sourceDao.getAuthorizedByCurrencyCode(any())).thenReturn(
                 new Source(0L, "id", SourceStatus.AUTHORIZED, "id"));
         assertThrows(NotFoundException.class, () ->
                 fistfulService.createDeposit("payoutId", "walletId", 1L, "currencyCode"));

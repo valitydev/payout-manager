@@ -12,6 +12,6 @@ public interface SourceDao extends GenericDao {
 
     Source get(String sourceId) throws DaoException;
 
-    Source getByCurrencyCode(String currencyCode) throws DaoException;
+    Source getAuthorizedByCurrencyCode(String currencyCode) throws DaoException;
 
 }

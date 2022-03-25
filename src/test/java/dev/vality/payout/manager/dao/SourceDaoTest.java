@@ -43,7 +43,7 @@ public class SourceDaoTest {
     public void testUpdate() {
         var source = new Source();
         source.setSourceId(generateSourceId());
-        source.setStatus(SourceStatus.AUTHORIZED);
+        source.setStatus(SourceStatus.UNAUTHORIZED);
         source.setId(sourceDao.save(source).get());
         assertEquals(source, sourceDao.get(source.getSourceId()));
         var change = new TimestampedChange();
@@ -54,7 +54,7 @@ public class SourceDaoTest {
         update.setId(sourceDao.save(update).get());
         assertEquals(update, sourceDao.get(update.getSourceId()));
         assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate, TABLE_NAME));
-        assertEquals(update, sourceDao.getByCurrencyCode(update.getCurrencyCode()));
-        assertThrows(NotFoundException.class, () -> sourceDao.getByCurrencyCode("RUB"));
+        assertEquals(update, sourceDao.getAuthorizedByCurrencyCode(update.getCurrencyCode()));
+        assertThrows(NotFoundException.class, () -> sourceDao.getAuthorizedByCurrencyCode("RUB"));
     }
 }

@@ -4,6 +4,7 @@ import dev.vality.dao.DaoException;
 import dev.vality.dao.impl.AbstractGenericDao;
 import dev.vality.mapper.RecordRowMapper;
 import dev.vality.payout.manager.dao.SourceDao;
+import dev.vality.payout.manager.domain.enums.SourceStatus;
 import dev.vality.payout.manager.domain.tables.pojos.Source;
 import dev.vality.payout.manager.domain.tables.records.SourceRecord;
 import dev.vality.payout.manager.exception.NotFoundException;
@@ -53,9 +54,10 @@ public class SourceDaoImpl extends AbstractGenericDao implements SourceDao {
     }
 
     @Override
-    public Source getByCurrencyCode(String currencyCode) throws DaoException {
+    public Source getAuthorizedByCurrencyCode(String currencyCode) throws DaoException {
         Query query = getDslContext().selectFrom(SOURCE)
-                .where(SOURCE.CURRENCY_CODE.eq(currencyCode));
+                .where(SOURCE.CURRENCY_CODE.eq(currencyCode)
+                        .and(SOURCE.STATUS.eq(SourceStatus.AUTHORIZED)));
         return fetch(query, sourceRowMapper).stream()
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException(
