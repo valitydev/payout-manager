@@ -39,7 +39,7 @@
         <dependency>
             <groupId>dev.vality</groupId>
             <artifactId>payout-manager-proto</artifactId>
-            <version>1.34-2595084</version>
+            <version>1.35-dbed280</version>
         </dependency>
         <dependency>
             <groupId>dev.vality.woody</groupId>
@@ -64,12 +64,12 @@
         <dependency>
             <groupId>dev.vality</groupId>
             <artifactId>fistful-proto</artifactId>
-            <version>1.141-fd4117f</version>
+            <version>1.144-ea0fe7a</version>
         </dependency>
         <dependency>
             <groupId>dev.vality</groupId>
             <artifactId>machinegun-proto</artifactId>
-            <version>1.27-dec518d</version>
+            <version>1.30-277f06e</version>
         </dependency>
         <dependency>
             <groupId>dev.vality</groupId>
