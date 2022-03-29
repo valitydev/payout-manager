@@ -1,9 +1,7 @@
 package dev.vality.payout.manager.service;
 
 import dev.vality.damsel.accounter.PostingPlanLog;
-import dev.vality.damsel.domain.Cash;
-import dev.vality.damsel.domain.Party;
-import dev.vality.damsel.domain.Shop;
+import dev.vality.damsel.domain.*;
 import dev.vality.dao.DaoException;
 import dev.vality.geck.common.util.TypeUtil;
 import dev.vality.payout.manager.dao.PayoutDao;
@@ -32,6 +30,7 @@ public class PayoutService {
     private final ShumwayService shumwayService;
     private final PartyManagementService partyManagementService;
     private final CashFlowPostingService cashFlowPostingService;
+    private final FistfulService fistfulService;
 
     private final PayoutDao payoutDao;
 
@@ -58,8 +57,6 @@ public class PayoutService {
                         String.format("PayoutToolId is null with partyId=%s, shopId=%s", partyId, shopId));
             }
             payoutToolId = shop.getPayoutToolId();
-        } else {
-            validatePayoutToolId(payoutToolId, shop, party);
         }
 
         var localDateTime = LocalDateTime.now(ZoneOffset.UTC);
@@ -80,32 +77,22 @@ public class PayoutService {
             throw new InsufficientFundsException(
                     String.format("Negative amount in payout cash flow, amount='%d', fee='%d'", amount, fee));
         }
-        save(payoutId, localDateTime, partyId, shopId, payoutToolId, amount, fee, cash.getCurrency().getSymbolicCode());
+        var payoutToolInfo = getPayoutToolInfo(payoutToolId, shop, party);
+        String walletId = null;
+        if (payoutToolInfo.isSetWalletInfo()) {
+            walletId = payoutToolInfo.getWalletInfo().getWalletId();
+        }
+        var domainPayoutToolInfo = TypeUtil.toEnumField(
+                payoutToolInfo.getSetField().getFieldName(),
+                dev.vality.payout.manager.domain.enums.PayoutToolInfo.class);
+        save(payoutId, localDateTime, partyId, shopId, payoutToolId,
+                amount, fee, cash.getCurrency().getSymbolicCode(), domainPayoutToolInfo, walletId);
         var cashFlowPostings = toDomainCashFlows(payoutId, localDateTime, finalCashFlowPostings);
         cashFlowPostingService.save(cashFlowPostings);
         var postingPlanLog = shumwayService.hold(payoutId, cashFlowPostings);
         validateAccount(shopId, payoutId, party, postingPlanLog);
         log.info("Payout has been created, payoutId='{}'", payoutId);
         return payoutId;
-    }
-
-    private void validatePayoutId(String payoutId) {
-        if (payoutDao.get(payoutId) != null) {
-            throw new PayoutAlreadyExistsException(String.format("Payout already exists, payoutId='%s'", payoutId));
-        }
-    }
-
-    private void validatePayoutToolId(String payoutToolId, Shop shop, Party party) {
-        var contractId = shop.getContractId();
-        var contract = party.getContracts().get(contractId);
-        if (contract == null) {
-            throw new NotFoundException(String.format("Contract not found, contractId='%s'", contractId));
-        }
-        contract.getPayoutTools().stream()
-                .filter(p -> p.getId().equals(payoutToolId))
-                .findAny()
-                .orElseThrow(() ->
-                        new NotFoundException(String.format("PayoutTool not found, payoutToolId='%s'", payoutToolId)));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -117,7 +104,9 @@ public class PayoutService {
             String payoutToolId,
             long amount,
             long fee,
-            String symbolicCode) {
+            String symbolicCode,
+            dev.vality.payout.manager.domain.enums.PayoutToolInfo payoutToolInfo,
+            String walletId) {
         log.info("Trying to save a Payout, payoutId='{}'", payoutId);
         try {
             var payout = new Payout();
@@ -131,6 +120,8 @@ public class PayoutService {
             payout.setAmount(amount);
             payout.setFee(fee);
             payout.setCurrencyCode(symbolicCode);
+            payout.setPayoutToolInfo(payoutToolInfo);
+            payout.setWalletId(walletId);
             payoutDao.save(payout);
         } catch (DaoException ex) {
             throw new StorageException(String.format("Failed to save Payout, payoutId='%s'", payoutId), ex);
@@ -167,6 +158,17 @@ public class PayoutService {
             }
             payoutDao.changeStatus(payoutId, PayoutStatus.CONFIRMED);
             shumwayService.commit(payoutId);
+            if (payout.getPayoutToolInfo() == dev.vality.payout.manager.domain.enums.PayoutToolInfo.WALLET_INFO) {
+                try {
+                    fistfulService.createDeposit(payoutId, payout.getWalletId(),
+                            payout.getAmount(), payout.getCurrencyCode());
+                } catch (Exception ex) {
+                    log.warn("Failed to confirm then fistfulService.createDeposit", ex);
+                    payoutDao.changeStatus(payoutId, PayoutStatus.FAILED);
+                    shumwayService.revert(payoutId);
+                    return;
+                }
+            }
             log.info("Payout has been confirmed, payoutId='{}'", payoutId);
         } catch (DaoException ex) {
             throw new StorageException(String.format("Failed to confirm a payout, payoutId='%s'", payoutId), ex);
@@ -183,16 +185,39 @@ public class PayoutService {
                 return;
             }
             payoutDao.changeStatus(payoutId, PayoutStatus.CANCELLED, details);
-            switch (payout.getStatus()) {
-                case UNPAID, PAID -> shumwayService.rollback(payoutId);
-                case CONFIRMED -> shumwayService.revert(payoutId);
-                default -> throw new InvalidStateException(String.format("Invalid status for 'cancel' action, " +
+            if (payout.getStatus() == PayoutStatus.UNPAID) {
+                shumwayService.rollback(payoutId);
+            } else {
+                throw new InvalidStateException(String.format("Invalid status for 'cancel' action, " +
                         "payoutId='%s', currentStatus='%s'", payoutId, payout.getStatus()));
             }
             log.info("Payout has been cancelled, payoutId='{}'", payoutId);
         } catch (DaoException ex) {
             throw new StorageException(String.format("Failed to cancel a payout, payoutId='%s'", payoutId), ex);
         }
+    }
+
+    private void validatePayoutId(String payoutId) {
+        if (payoutDao.get(payoutId) != null) {
+            throw new PayoutAlreadyExistsException(String.format("Payout already exists, payoutId='%s'", payoutId));
+        }
+    }
+
+    private PayoutToolInfo getPayoutToolInfo(
+            String payoutToolId,
+            Shop shop,
+            Party party) {
+        var contractId = shop.getContractId();
+        var contract = party.getContracts().get(contractId);
+        if (contract == null) {
+            throw new NotFoundException(String.format("Contract not found, contractId='%s'", contractId));
+        }
+        return contract.getPayoutTools().stream()
+                .filter(p -> p.getId().equals(payoutToolId))
+                .findAny()
+                .map(PayoutTool::getPayoutToolInfo)
+                .orElseThrow(() ->
+                        new NotFoundException(String.format("PayoutTool not found, payoutToolId='%s'", payoutToolId)));
     }
 
     private void validateAccount(String shopId, String payoutId, Party party, PostingPlanLog postingPlanLog) {

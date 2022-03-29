@@ -55,9 +55,19 @@ service:
   partyManagement:
     url: http://hellgate:8022/v1/processing/partymgmt
     networkTimeout: 5000
+  fistful:
+    deposit:
+      url: http://fistful:8022/fustful
+      networkTimeout: 5000
 
 kafka:
   bootstrap-servers: "localhost:29092"
+  client-id: payout-manager
+  consumer:
+    group-id: payout-manager-group-1
+    max-poll-interval-ms: 60000
+    max-session-timeout-ms: 60000
+    throttling-timeout-ms: 1000
   ssl:
     enabled: false
     key-store-type: changeit
@@ -70,6 +80,13 @@ kafka:
     pm-events-payout:
       name: pm-events-payout
       produce:
+        enabled: false
+    source:
+      name: source
+      consume:
+        throttling-timeout-ms: 1000
+        max-poll-records: 50
+        concurrency: 1
         enabled: false
 
 testcontainers:

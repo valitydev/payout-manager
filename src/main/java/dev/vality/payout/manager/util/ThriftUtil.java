@@ -5,7 +5,6 @@ import dev.vality.geck.common.util.TypeUtil;
 import dev.vality.payout.manager.*;
 import dev.vality.payout.manager.domain.enums.AccountType;
 import dev.vality.payout.manager.domain.tables.pojos.CashFlowPosting;
-import dev.vality.payout.manager.exception.NotFoundException;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -84,18 +83,12 @@ public class ThriftUtil {
     private static PayoutStatus toThriftPayoutStatus(
             dev.vality.payout.manager.domain.enums.PayoutStatus payoutStatus,
             String cancelDetails) {
-        switch (payoutStatus) {
-            case UNPAID:
-                return PayoutStatus.unpaid(new PayoutUnpaid());
-            case PAID:
-                return PayoutStatus.paid(new PayoutPaid());
-            case CONFIRMED:
-                return PayoutStatus.confirmed(new PayoutConfirmed());
-            case CANCELLED:
-                return PayoutStatus.cancelled(new PayoutCancelled(cancelDetails));
-            default:
-                throw new NotFoundException(String.format("Payout status not found, status = %s", payoutStatus));
-        }
+        return switch (payoutStatus) {
+            case UNPAID -> PayoutStatus.unpaid(new PayoutUnpaid());
+            case CONFIRMED -> PayoutStatus.confirmed(new PayoutConfirmed());
+            case CANCELLED -> PayoutStatus.cancelled(new PayoutCancelled(cancelDetails));
+            case FAILED -> PayoutStatus.failed(new PayoutFailed());
+        };
     }
 
     private static List<FinalCashFlowPosting> toThriftCashFlows(
@@ -121,25 +114,16 @@ public class ThriftUtil {
                 }
                 throw new IllegalArgumentException();
             case EXTERNAL:
-                switch (cashFlowAccount.getExternal()) {
-                    case income:
-                        return AccountType.EXTERNAL_INCOME;
-                    case outcome:
-                        return AccountType.EXTERNAL_OUTCOME;
-                    default:
-                        throw new IllegalArgumentException();
-                }
+                return switch (cashFlowAccount.getExternal()) {
+                    case income -> AccountType.EXTERNAL_INCOME;
+                    case outcome -> AccountType.EXTERNAL_OUTCOME;
+                };
             case MERCHANT:
-                switch (cashFlowAccount.getMerchant()) {
-                    case settlement:
-                        return AccountType.MERCHANT_SETTLEMENT;
-                    case guarantee:
-                        return AccountType.MERCHANT_GUARANTEE;
-                    case payout:
-                        return AccountType.MERCHANT_PAYOUT;
-                    default:
-                        throw new IllegalArgumentException();
-                }
+                return switch (cashFlowAccount.getMerchant()) {
+                    case settlement -> AccountType.MERCHANT_SETTLEMENT;
+                    case guarantee -> AccountType.MERCHANT_GUARANTEE;
+                    case payout -> AccountType.MERCHANT_PAYOUT;
+                };
             case PROVIDER:
                 if (cashFlowAccount.getProvider() == ProviderCashFlowAccount.settlement) {
                     return AccountType.PROVIDER_SETTLEMENT;
@@ -151,30 +135,21 @@ public class ThriftUtil {
     }
 
     private static CashFlowAccount toAccountType(AccountType accountType) {
-        switch (accountType) {
-            case EXTERNAL_INCOME:
-                return CashFlowAccount.external(
-                        ExternalCashFlowAccount.income);
-            case EXTERNAL_OUTCOME:
-                return CashFlowAccount.external(
-                        ExternalCashFlowAccount.outcome);
-            case MERCHANT_PAYOUT:
-                return CashFlowAccount.merchant(
-                        MerchantCashFlowAccount.payout);
-            case MERCHANT_GUARANTEE:
-                return CashFlowAccount.merchant(
-                        MerchantCashFlowAccount.guarantee);
-            case MERCHANT_SETTLEMENT:
-                return CashFlowAccount.merchant(
-                        MerchantCashFlowAccount.settlement);
-            case SYSTEM_SETTLEMENT:
-                return CashFlowAccount.system(
-                        SystemCashFlowAccount.settlement);
-            case PROVIDER_SETTLEMENT:
-                return CashFlowAccount.provider(
-                        ProviderCashFlowAccount.settlement);
-            default:
-                throw new IllegalArgumentException();
-        }
+        return switch (accountType) {
+            case EXTERNAL_INCOME -> CashFlowAccount.external(
+                    ExternalCashFlowAccount.income);
+            case EXTERNAL_OUTCOME -> CashFlowAccount.external(
+                    ExternalCashFlowAccount.outcome);
+            case MERCHANT_PAYOUT -> CashFlowAccount.merchant(
+                    MerchantCashFlowAccount.payout);
+            case MERCHANT_GUARANTEE -> CashFlowAccount.merchant(
+                    MerchantCashFlowAccount.guarantee);
+            case MERCHANT_SETTLEMENT -> CashFlowAccount.merchant(
+                    MerchantCashFlowAccount.settlement);
+            case SYSTEM_SETTLEMENT -> CashFlowAccount.system(
+                    SystemCashFlowAccount.settlement);
+            case PROVIDER_SETTLEMENT -> CashFlowAccount.provider(
+                    ProviderCashFlowAccount.settlement);
+        };
     }
 }

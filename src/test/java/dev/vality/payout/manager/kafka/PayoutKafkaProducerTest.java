@@ -1,19 +1,16 @@
-package dev.vality.payout.manager.service;
+package dev.vality.payout.manager.kafka;
 
 import dev.vality.payout.manager.Event;
-import dev.vality.payout.manager.config.KafkaConsumerConfig;
+import dev.vality.payout.manager.config.KafkaPostgresqlSpringBootITest;
 import dev.vality.payout.manager.domain.tables.pojos.CashFlowPosting;
 import dev.vality.payout.manager.domain.tables.pojos.Payout;
+import dev.vality.payout.manager.service.PayoutKafkaProducerService;
 import dev.vality.payout.manager.util.ThriftUtil;
-import dev.vality.testcontainers.annotations.KafkaSpringBootTest;
-import dev.vality.testcontainers.annotations.kafka.KafkaTestcontainer;
 import dev.vality.testcontainers.annotations.kafka.config.KafkaConsumer;
-import dev.vality.testcontainers.annotations.postgresql.PostgresqlTestcontainerSingleton;
 import org.junit.jupiter.api.Test;
 import org.rnorth.ducttape.unreliables.Unreliables;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Import;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,13 +21,8 @@ import static dev.vality.testcontainers.annotations.util.RandomBeans.random;
 import static dev.vality.testcontainers.annotations.util.RandomBeans.randomStreamOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@PostgresqlTestcontainerSingleton
-@KafkaTestcontainer(
-        properties = "kafka.topic.pm-events-payout.produce.enabled=true",
-        topicsKeys = "kafka.topic.pm-events-payout.name")
-@KafkaSpringBootTest
-@Import(KafkaConsumerConfig.class)
-public class PayoutKafkaProducerServiceTest {
+@KafkaPostgresqlSpringBootITest
+public class PayoutKafkaProducerTest {
 
     private static final int TIMEOUT = 5;
 

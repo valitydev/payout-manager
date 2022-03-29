@@ -1,69 +1,141 @@
 package dev.vality.payout.manager.config;
 
 import dev.vality.kafka.common.serialization.ThriftSerializer;
+import dev.vality.machinegun.eventsink.SinkEvent;
 import dev.vality.payout.manager.Event;
 import dev.vality.payout.manager.config.properties.KafkaSslProperties;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import dev.vality.payout.manager.serde.SinkEventDeserializer;
 import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.config.SslConfigs;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.listener.ContainerProperties;
+import org.springframework.kafka.listener.SeekToCurrentBatchErrorHandler;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.apache.kafka.common.security.auth.SecurityProtocol.SSL;
+import static org.apache.kafka.clients.consumer.OffsetResetStrategy.EARLIEST;
 
 @Configuration
-@Slf4j
-@RequiredArgsConstructor
+@EnableConfigurationProperties(KafkaSslProperties.class)
 public class KafkaConfig {
-
-    private final KafkaSslProperties kafkaSslProperties;
 
     @Value("${kafka.bootstrap-servers}")
     private String bootstrapServers;
 
+    @Value("${kafka.client-id}")
+    private String clientId;
+
+    @Value("${kafka.consumer.group-id}")
+    private String groupId;
+
+    @Value("${kafka.consumer.max-poll-interval-ms}")
+    private int maxPollInterval;
+
+    @Value("${kafka.consumer.max-session-timeout-ms}")
+    private int maxSessionTimeout;
+
+    @Value("${kafka.topic.source.consume.max-poll-records}")
+    private String sourceMaxPollRecords;
+
+    @Value("${kafka.topic.source.consume.concurrency}")
+    private int sourceConcurrency;
+
     @Bean
-    public KafkaTemplate<String, Event> kafkaTemplate() {
-        return new KafkaTemplate<>(producerFactory());
+    public ConcurrentKafkaListenerContainerFactory<String, SinkEvent> sourceContainerFactory(
+            KafkaSslProperties kafkaSslProperties) {
+        var containerFactory = new ConcurrentKafkaListenerContainerFactory<String, SinkEvent>();
+        configureContainerFactory(
+                containerFactory,
+                new SinkEventDeserializer(),
+                clientId + "-source",
+                sourceMaxPollRecords,
+                kafkaSslProperties);
+        containerFactory.setConcurrency(sourceConcurrency);
+        return containerFactory;
     }
 
-    private ProducerFactory<String, Event> producerFactory() {
+    @Bean
+    public KafkaTemplate<String, Event> kafkaTemplate(KafkaSslProperties kafkaSslProperties) {
+        return new KafkaTemplate<>(producerFactory(kafkaSslProperties));
+    }
+
+    private <T> void configureContainerFactory(
+            ConcurrentKafkaListenerContainerFactory<String, T> containerFactory,
+            Deserializer<T> deserializer,
+            String clientId,
+            String maxPollRecords,
+            KafkaSslProperties kafkaSslProperties) {
+        var consumerFactory = createKafkaConsumerFactory(
+                deserializer,
+                clientId,
+                maxPollRecords,
+                kafkaSslProperties);
+        containerFactory.setConsumerFactory(consumerFactory);
+        containerFactory.setBatchErrorHandler(new SeekToCurrentBatchErrorHandler());
+        containerFactory.setBatchListener(true);
+        containerFactory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
+    }
+
+    private ProducerFactory<String, Event> producerFactory(KafkaSslProperties kafkaSslProperties) {
         Map<String, Object> config = new HashMap<>();
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ThriftSerializer.class);
-        config.putAll(sslConfig());
+        configureSsl(config, kafkaSslProperties);
         return new DefaultKafkaProducerFactory<>(config);
     }
 
-    private Map<String, Object> sslConfig() {
-        log.info("Kafka SSL isEnabled={}", kafkaSslProperties.isEnabled());
+    private <T> DefaultKafkaConsumerFactory<String, T> createKafkaConsumerFactory(
+            Deserializer<T> deserializer,
+            String clientId,
+            String maxPollRecords,
+            KafkaSslProperties kafkaSslProperties) {
+        Map<String, Object> properties = defaultProperties(kafkaSslProperties);
+        properties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        properties.put(ConsumerConfig.CLIENT_ID_CONFIG, clientId);
+        properties.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, maxPollRecords);
+        return new DefaultKafkaConsumerFactory<>(properties, new StringDeserializer(), deserializer);
+    }
 
-        Map<String, Object> config = new HashMap<>();
+    private Map<String, Object> defaultProperties(KafkaSslProperties kafkaSslProperties) {
+        Map<String, Object> properties = new HashMap<>();
+        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, EARLIEST.name().toLowerCase());
+        properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+        properties.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, maxPollInterval);
+        properties.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, maxSessionTimeout);
+        configureSsl(properties, kafkaSslProperties);
+        return properties;
+    }
+
+    private void configureSsl(Map<String, Object> properties, KafkaSslProperties kafkaSslProperties) {
         if (kafkaSslProperties.isEnabled()) {
-            config.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SSL.name());
-            config.put(
-                    SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
+            properties.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SSL.name());
+            properties.put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
                     new File(kafkaSslProperties.getTrustStoreLocation()).getAbsolutePath());
-            config.put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, kafkaSslProperties.getTrustStorePassword());
-            config.put(SslConfigs.SSL_KEYSTORE_TYPE_CONFIG, kafkaSslProperties.getKeyStoreType());
-            config.put(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, kafkaSslProperties.getTrustStoreType());
-            config.put(
-                    SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,
+            properties.put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, kafkaSslProperties.getTrustStorePassword());
+            properties.put(SslConfigs.SSL_KEYSTORE_TYPE_CONFIG, kafkaSslProperties.getKeyStoreType());
+            properties.put(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, kafkaSslProperties.getTrustStoreType());
+            properties.put(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,
                     new File(kafkaSslProperties.getKeyStoreLocation()).getAbsolutePath());
-            config.put(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, kafkaSslProperties.getKeyStorePassword());
-            config.put(SslConfigs.SSL_KEY_PASSWORD_CONFIG, kafkaSslProperties.getKeyPassword());
+            properties.put(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, kafkaSslProperties.getKeyStorePassword());
+            properties.put(SslConfigs.SSL_KEY_PASSWORD_CONFIG, kafkaSslProperties.getKeyPassword());
         }
-        return config;
     }
 }
