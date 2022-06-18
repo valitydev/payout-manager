@@ -6,7 +6,7 @@
     <parent>
         <groupId>dev.vality</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>1.0.13</version>
+        <version>1.0.17</version>
     </parent>
 
     <artifactId>payout-manager</artifactId>
@@ -39,7 +39,7 @@
         <dependency>
             <groupId>dev.vality</groupId>
             <artifactId>payout-manager-proto</artifactId>
-            <version>1.35-dbed280</version>
+            <version>1.36-063163d</version>
         </dependency>
         <dependency>
             <groupId>dev.vality.woody</groupId>
@@ -64,12 +64,12 @@
         <dependency>
             <groupId>dev.vality</groupId>
             <artifactId>fistful-proto</artifactId>
-            <version>1.144-ea0fe7a</version>
+            <version>1.145-c45166d</version>
         </dependency>
         <dependency>
             <groupId>dev.vality</groupId>
             <artifactId>machinegun-proto</artifactId>
-            <version>1.30-277f06e</version>
+            <version>1.38-347c5c4</version>
         </dependency>
         <dependency>
             <groupId>dev.vality</groupId>
@@ -210,7 +210,7 @@
                     <dependency>
                         <groupId>org.apache.maven.shared</groupId>
                         <artifactId>maven-filtering</artifactId>
-                        <version>3.2.0</version>
+                        <version>3.3.0</version>
                     </dependency>
                 </dependencies>
                 <configuration>
