@@ -9,6 +9,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +28,9 @@ import static org.apache.kafka.clients.consumer.OffsetResetStrategy.EARLIEST;
 @Configuration
 public class KafkaConfig {
 
+    @Value("${kafka.topic.source.consume.concurrency}")
+    private int sourceConcurrency;
+
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, SinkEvent> sourceContainerFactory(
             KafkaProperties kafkaProperties) {
@@ -35,6 +39,7 @@ public class KafkaConfig {
                 containerFactory,
                 new SinkEventDeserializer(),
                 kafkaProperties);
+        containerFactory.setConcurrency(sourceConcurrency);
         return containerFactory;
     }
 
