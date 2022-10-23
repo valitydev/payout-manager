@@ -40,6 +40,15 @@ spring:
     flyway:
       table: schema_version
       schemas: pm
+  kafka:
+    bootstrap-servers: "localhost:29092"
+    client-id: payout-manager
+    consumer:
+      group-id: payout-manager-group-1
+      properties:
+        max.poll.interval.ms: 60000
+        session.timeout.ms: 60000
+        max.poll.records: 50
 
 info:
   version: '@project.version@'
@@ -61,21 +70,6 @@ service:
       networkTimeout: 5000
 
 kafka:
-  bootstrap-servers: "localhost:29092"
-  client-id: payout-manager
-  consumer:
-    group-id: payout-manager-group-1
-    max-poll-interval-ms: 60000
-    max-session-timeout-ms: 60000
-    throttling-timeout-ms: 1000
-  ssl:
-    enabled: false
-    key-store-type: changeit
-    key-store-location: changeit
-    key-password: changeit
-    trust-store-type: changeit
-    trust-store-location: changeit
-    trust-store-password: changeit
   topic:
     pm-events-payout:
       name: pm-events-payout
@@ -85,7 +79,6 @@ kafka:
       name: source
       consume:
         throttling-timeout-ms: 1000
-        max-poll-records: 50
         concurrency: 1
         enabled: false
 

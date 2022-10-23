@@ -19,14 +19,12 @@ public class PartyManagementService {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private final UserInfo userInfo = new UserInfo("admin", UserType.internal_user(new InternalUser()));
-
     private final PartyManagementSrv.Iface partyManagementClient;
 
     public Party getParty(String partyId) throws NotFoundException {
         log.info("Trying to get party, partyId='{}'", partyId);
         try {
-            Party party = partyManagementClient.get(userInfo, partyId);
+            Party party = partyManagementClient.get(partyId);
             log.info("Party has been found, partyId='{}'", partyId);
             return party;
         } catch (PartyNotFound ex) {
@@ -49,7 +47,6 @@ public class PartyManagementService {
                 .setPayoutToolId(payoutToolId);
         try {
             var finalCashFlowPostings = partyManagementClient.computePayoutCashFlow(
-                    userInfo,
                     partyId,
                     payoutParams);
             log.info("Payout cash flow has been computed, partyId='{}', payoutParams='{}', postings='{}'",
