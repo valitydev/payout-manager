@@ -6,7 +6,7 @@
     <parent>
         <groupId>dev.vality</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>1.0.13</version>
+        <version>1.0.18</version>
     </parent>
 
     <artifactId>payout-manager</artifactId>
@@ -22,7 +22,7 @@
         <exposed.ports>${server.port} ${management.port}</exposed.ports>
         <dockerfile.registry>${env.REGISTRY}</dockerfile.registry>
         <db.host.name>localhost</db.host.name>
-        <db.port>5432</db.port>
+        <db.port>5433</db.port>
         <db.name>payout_manager</db.name>
         <db.url>jdbc:postgresql://${db.host.name}:${db.port}/${db.name}</db.url>
         <db.user>postgres</db.user>
@@ -39,7 +39,7 @@
         <dependency>
             <groupId>dev.vality</groupId>
             <artifactId>payout-manager-proto</artifactId>
-            <version>1.35-dbed280</version>
+            <version>1.38-635dc24</version>
         </dependency>
         <dependency>
             <groupId>dev.vality.woody</groupId>
@@ -64,12 +64,12 @@
         <dependency>
             <groupId>dev.vality</groupId>
             <artifactId>fistful-proto</artifactId>
-            <version>1.144-ea0fe7a</version>
+            <version>1.151-9c78e89</version>
         </dependency>
         <dependency>
             <groupId>dev.vality</groupId>
             <artifactId>machinegun-proto</artifactId>
-            <version>1.30-277f06e</version>
+            <version>1.41-96f7f11</version>
         </dependency>
         <dependency>
             <groupId>dev.vality</groupId>
@@ -120,6 +120,10 @@
 
         <!--third party-->
         <dependency>
+            <groupId>software.amazon.msk</groupId>
+            <artifactId>aws-msk-iam-auth</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
         </dependency>
@@ -162,7 +166,7 @@
         <dependency>
             <groupId>dev.vality</groupId>
             <artifactId>testcontainers-annotations</artifactId>
-            <version>1.4.0</version>
+            <version>1.4.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
