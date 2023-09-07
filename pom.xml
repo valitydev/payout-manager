@@ -6,11 +6,11 @@
     <parent>
         <groupId>dev.vality</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>1.0.18</version>
+        <version>1.0.20</version>
     </parent>
 
     <artifactId>payout-manager</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0>
     <packaging>jar</packaging>
 
     <name>payout-manager</name>
@@ -64,7 +64,7 @@
         <dependency>
             <groupId>dev.vality</groupId>
             <artifactId>fistful-proto</artifactId>
-            <version>1.151-9c78e89</version>
+            <version>1.151-9c71.161-c9c3aa0</version>
         </dependency>
         <dependency>
             <groupId>dev.vality</groupId>
@@ -214,7 +214,7 @@
                     <dependency>
                         <groupId>org.apache.maven.shared</groupId>
                         <artifactId>maven-filtering</artifactId>
-                        <version>3.2.0</version>
+                        <version>3.3.1</version>
                     </dependency>
                 </dependencies>
                 <configuration>
