@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>payout-manager</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>payout-manager</name>
@@ -64,7 +64,7 @@
         <dependency>
             <groupId>dev.vality</groupId>
             <artifactId>fistful-proto</artifactId>
-            <version>1.151-9c78e89</version>
+            <version>1.168-6600be9</version>
         </dependency>
         <dependency>
             <groupId>dev.vality</groupId>
